@@ -1,5 +1,6 @@
 #include "model.h"
 #include "weight.h"
+#include "function.h"
 #include <assert.h>
 
 Model::Model()
@@ -89,48 +90,36 @@ void Model::reindex()
 	}
 }
 
-void Model::train(long double learning_rate, set<Node*>& plot_in_list, set<Node*>& plot_out_list, HWND& plotWindowHwnd)
+void Model::train(long double learning_rate, Data& input_data, Data& output_data)
 {
-	int cnt = 0;
-	for(auto node : plot_out_list) {
-		if(node->plot_output) {
-			cnt++;
-		}
-	}
-	if( (count_input_node() != 2) || (cnt != 1) ) {
-		return;
-	}
+	assert(input_data.size() == input_node_list.size());
+	assert(output_data.size() == output_node_list.size());
 
-	Node* input[2];
+	const int INPUT_SIZE = (int)input_data.size();
+	const int OUTPUT_SIZE = (int)output_data.size();
 
-	for(int iter = 0; iter<1; iter++) {
+	for(int iter = 0; iter<100; iter++) {
 		//이거 전체를 training data전체에 대해 반복, 한 번 가중치 갱신에 쓰인 데이터가 여러번 쓰여야 하는게 맞다는걸 확인하기
-		for(auto data : input_data_list) {
+		for(auto data : input_node_list) {
+			
 			//input node는 input 설정
-			input[0] = *(plot_in_list.begin());
-			input[1] = *(plot_in_list.rbegin());
-
-			input[0]->set_input(data->getXY().y);
-			input[1]->set_input(data->getXY().x);
-			//output node는 output 설정
-			Node* output_node = NULL;
-			for(auto node : plot_out_list) {
-				if(node->plot_output) {
-					output_node = node;
-				}
+			for(int i = 0; i < INPUT_SIZE; i++) {
+				input_node_list[i] -> set_input(input_data[i]);
 			}
-			output_node -> set_target_output(data->get_class());
+
+			//output node는 output 설정
+			for(int i = 0; i < OUTPUT_SIZE; i++) {
+				output_node_list[i] -> set_target_output(output_data[i]);
+			}
 
 			//delta, grad 계산
 			//input node자체는 delta구할 필요 없지만 재귀적으로 구하기 위해 input부터 시작
-			for(auto node : plot_in_list) {
+			for(auto node : input_node_list) {
 				node -> calc_delta();
 			}
 			//output node는 grad필요 없음
 			for(auto node : node_list) {
-				if(node != output_node) {
-					node -> calc_grad();
-				}
+				node -> calc_grad();
 			}
 
 			//가중치 갱신 및 새로plot
@@ -138,7 +127,7 @@ void Model::train(long double learning_rate, set<Node*>& plot_in_list, set<Node*
 				node -> update_weight(learning_rate);
 			}
 
-
+			
 			/*printf("===========\nnode list:\n");
 			for(int i=0; i<(int)node_list.size(); i++)
 			{
@@ -153,79 +142,76 @@ void Model::train(long double learning_rate, set<Node*>& plot_in_list, set<Node*
 			printf("============\n\n"); fflush(stdout);*/
 			
 		}
-
-		if(plotWindowHwnd!=NULL)
-		{
-			SendMessage(plotWindowHwnd, WM_TIMER, NULL, NULL);
-		}
 	}
 }
 
-
-
-
-
-
-void Model::setXY_of_idx(int x, int y, int idx)
+void Model::train(long double learning_rate, vector<Data>& input_data_list, vector<Data>& output_data_list)
 {
-	node_list[idx] -> setXY(x,y);
-}
-int Model::get_idx_of_clicked_node(int x, int y)
-{
-	for(int i=0; i<node_list.size(); i++)
-	{
-		if(node_list[i]->isIn(x, y))
-		{
-			return node_list[i]->get_idx();
-		}
-	}
-	return -1;
-}
-bool Model::get_is_selected_left_by_idx(int idx)
-{
-	return node_list[idx]->is_selected_left;
-}
-void Model::clear_selected_left()
-{
-	for(int i = 0; i<(int)node_list.size(); i++)
-	{
-		node_list[i]->is_selected_left = false;
-	}
-}
-void Model::clear_selected_right()
-{
-	for(int i = 0; i<(int)node_list.size(); i++)
-	{
-		node_list[i]->is_selected_right = false;
-	}
-}
-void Model::print(HDC MemDC)
-{
-	for(auto node : node_list) {
-		node -> print_weight(MemDC);
-	}
-	for(auto node: node_list) {
-		node -> print(MemDC);
+	assert(input_data_list.size() == output_data_list.size());
+	for(int i=0; i<(int)output_data_list.size(); i++) {
+		train(learning_rate, input_data_list[i], output_data_list[i]);
 	}
 }
 
-void Model::clear_plot_mode()
+Data Model::get_output(Data& input_data)
 {
-	for(auto node : node_list) {
-		node -> plot_mode = false;
+	Data output;
+	for(int i=0; i<(int)input_data.size(); i++) {
+		input_node_list[i] -> set_input(input_data[i]);
 	}
-	for(auto w :  weight_list) {
-		w -> plot_mode = false;
+
+	for(auto node : output_node_list) {
+		output.push_back(node -> get_output());
 	}
+
+	return output;
+}
+
+vector<Data> Model::get_output(vector<Data>& input_data_list)
+{
+	vector<Data> output_list;
+	for(int i=0; i<(int)input_data_list.size(); i++) {
+		output_list.push_back(get_output(input_data_list[i]));
+	}
+	return output_list;
+}
+
+long double Model::cross_entropy_multi(Data& y, Data& h)
+{
+	assert(y.size() == h.size());
+	int size = (int)y.size();
+	long double error_sum = 0;
+	for(int i=0; i<size; i++) {
+		error_sum += cross_entropy(y[i], h[i]);
+	}
+
+	return error_sum;
+}
+
+long double Model::get_error(Data& input_data, Data& output_data)
+{
+	long double error_sum = 0;
+	Data output = get_output(input_data);
+
+	error_sum += cross_entropy_multi(output_data, output);
+
+	return error_sum;
+}
+
+long double Model::get_error(vector<Data>& input_data_list, vector<Data>& output_data_list)
+{
+	assert(input_data_list.size() == output_data_list.size());
+	long double error_sum = 0;
+	int output_size = (int)output_data_list.size();
+	
+	for(int i=0; i<output_size; i++) {
+		error_sum += get_error(input_data_list[i], output_data_list[i]);
+	}
+
+	return error_sum / output_size;
 }
 
 int Model::count_input_node()
 {
-	int cnt = 0;
-	for(int i = 0; i<(int)node_list.size(); i++)
-	{
-		if(node_list[i]->input_node)
-			cnt++;
-	}
-	return cnt;
+	return (int)input_node_list.size();
 }

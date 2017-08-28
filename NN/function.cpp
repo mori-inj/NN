@@ -47,3 +47,11 @@ long double ReLU(long double x)
 	else
 		return x;
 }
+
+
+
+
+long double cross_entropy(long double y, long double h)
+{
+	return - (y * log(h) + (1-y)*log(1-h));
+}

@@ -4,20 +4,21 @@
 #include <vector>
 #include <set>
 #include "node.h"
-#include "input_data.h"
+
+typedef vector<long double> Data; // change it to specific class if needed later
 
 using namespace std;
 
 class Model
 {
 private:
+	vector<Node*> input_node_list;
+	vector<Node*> output_node_list;
+
 	vector<Node*> node_list;
 	set<pair<Node*, Node*> > weight_set;
 	vector<Weight*> weight_list;
 public:
-	vector<InputData*> input_data_list;
-	set<InputData*> input_data_set[2];
-
 	Model();
 	~Model();
 	int get_node_num() { return (int)node_list.size(); }
@@ -30,8 +31,15 @@ public:
 	vector<Node*>::iterator get_last_node_iter();
 	void erase_node(Node* node);
 	void reindex();
-	void train(long double learning_rate, set<Node*>& plot_in_list, set<Node*>& plot_out_list, HWND& plotWindowHwnd);
-	int count_input_node()
+	
+	void train(long double learning_rate, Data& input_data, Data& output_data);
+	void train(long double learning_rate, vector<Data>& input_data_list, vector<Data>& output_data_list);
+	Data get_output(Data& input_data);
+	vector<Data> get_output(vector<Data>& input_data_list);
+	long double cross_entropy_multi(Data& y, Data& h);
+	long double get_error(Data& input_data, Data& output_data);
+	long double get_error(vector<Data>& input_data_list, vector<Data>& output_data_list);
+	int count_input_node();
 };
 
 #endif

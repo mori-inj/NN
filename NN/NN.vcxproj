@@ -78,6 +78,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="function.cpp" />
+    <ClCompile Include="model.cpp" />
+    <ClCompile Include="node.cpp" />
+    <ClCompile Include="von.cpp" />
+    <ClCompile Include="weight.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="function.h" />
+    <ClInclude Include="model.h" />
+    <ClInclude Include="node.h" />
+    <ClInclude Include="weight.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
