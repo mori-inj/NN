@@ -19,6 +19,13 @@ Model::~Model()
 	}
 }
 
+
+
+void Model::add_new_node()
+{
+	//TODO	
+}
+
 void Model::add_node(Node* node)
 {
 	node_list.push_back(node);
@@ -41,18 +48,31 @@ void Model::add_node(Node* node)
 	}
 	printf("============\n\n"); fflush(stdout);
 }
+
 Node* Model::get_node_by_idx(int idx)
 {
 	return node_list[idx];
 }
-vector<Node*>::iterator Model::get_first_node_iter()
+
+
+
+void Model::add_weight(Idx start_node_idx, Idx end_node_idx)
 {
-	return node_list.begin();
+	Node* start_node = get_node_by_idx(start_node_idx);
+	Node* end_node = get_node_by_idx(end_node_idx);
+
+	if(check_weight_exists(start_node, end_node)) {
+		return;
+	}
+
+	//TODO
 }
-vector<Node*>::iterator Model::get_last_node_iter()
+
+void Model::add_weights(vector<Idx> start_node_idx_list, vecrot<Idx> end_node_idx_list)
 {
-	return node_list.end();
+	//TODO
 }
+
 bool Model::check_weight_exists(Node* a, Node* b)
 {
 	if(a == b)
@@ -61,6 +81,7 @@ bool Model::check_weight_exists(Node* a, Node* b)
 		return true;
 	return false;
 }
+
 void Model::update_weight_set(Weight* w)
 {
 	weight_set.insert(make_pair(w->getSrc(),w->getDst()));
@@ -70,6 +91,18 @@ void Model::update_weight_set(Weight* w)
 void Model::remove_weight_set(Weight* w)
 {
 	weight_set.erase(make_pair(w->getSrc(),w->getDst()));
+}
+
+
+
+vector<Node*>::iterator Model::get_first_node_iter()
+{
+	return node_list.begin();
+}
+
+vector<Node*>::iterator Model::get_last_node_iter()
+{
+	return node_list.end();
 }
 
 void Model::erase_node(Node* a)
@@ -89,6 +122,8 @@ void Model::reindex()
 		node_list[i]->set_idx(i);
 	}
 }
+
+
 
 void Model::train(long double learning_rate, Data& input_data, Data& output_data)
 {
@@ -210,6 +245,8 @@ long double Model::get_error(vector<Data>& input_data_list, vector<Data>& output
 
 	return error_sum / output_size;
 }
+
+
 
 int Model::count_input_node()
 {

@@ -23,11 +23,17 @@ public:
 	Model();
 	~Model();
 	int get_node_num() { return (int)node_list.size(); }
+	
+	void add_new_node();
 	void add_node(Node* node);
 	Node* get_node_by_idx(int idx);
+	
+	void add_weight(Idx start_node_idx, Idx end_node_idx);
+	void add_weights(vector<Idx> start_node_idx_list, vecrot<Idx> end_node_idx_list);
 	bool check_weight_exists(Node* a, Node* b);
 	void update_weight_set(Weight* w);
 	void remove_weight_set(Weight* w);
+	
 	vector<Node*>::iterator get_first_node_iter();
 	vector<Node*>::iterator get_last_node_iter();
 	void erase_node(Node* node);
@@ -41,10 +47,6 @@ public:
 	long double get_error(Data& input_data, Data& output_data);
 	long double get_error(vector<Data>& input_data_list, vector<Data>& output_data_list);
 	
-	void add_node();
-	void add_weight(Idx start_node_idx, Idx end_node_idx);
-	void add_weights(vector<Idx> start_node_idx_list, vecrot<Idx> end_node_idx_list);
-
 	int count_input_node();
 };
 
