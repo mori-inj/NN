@@ -6,6 +6,7 @@
 #include "node.h"
 
 typedef vector<long double> Data; // change it to specific class if needed later
+typedef int Idx;
 
 using namespace std;
 
@@ -39,6 +40,11 @@ public:
 	long double cross_entropy_multi(Data& y, Data& h);
 	long double get_error(Data& input_data, Data& output_data);
 	long double get_error(vector<Data>& input_data_list, vector<Data>& output_data_list);
+	
+	void add_node();
+	void add_weight(Idx start_node_idx, Idx end_node_idx);
+	void add_weights(vector<Idx> start_node_idx_list, vecrot<Idx> end_node_idx_list);
+
 	int count_input_node();
 };
 
