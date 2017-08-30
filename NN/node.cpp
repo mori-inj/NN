@@ -4,7 +4,7 @@
 
 extern int OUTPUT_CNT;
 
-Node::Node(int x, int y, int idx)
+Node::Node(int idx)
 {
 	bias = 0.5;
 	this->idx = idx;

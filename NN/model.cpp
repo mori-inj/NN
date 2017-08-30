@@ -3,19 +3,18 @@
 #include "function.h"
 #include <assert.h>
 
+using namespace std;
+
 Model::Model()
 {
 }
 
 Model::~Model()
 {
-	for(int i=0; i<(int)node_list.size(); i++) {
+	const int NODE_LIST_SIZE = (int)node_list.size();
+	for(int i=0; i<NODE_LIST_SIZE; i++) {
 		Node* node = node_list[i];
 		delete(node);
-	}
-	for(int i=0; i<(int)weight_list.size(); i++) {
-		Weight* weight = weight_list[i];
-		delete(weight);
 	}
 }
 
@@ -23,13 +22,14 @@ Model::~Model()
 
 void Model::add_new_node()
 {
-	//TODO	
+	Node* node = new Node((int)node_list.size());
+	add_node(node);
 }
 
 void Model::add_node(Node* node)
 {
 	node_list.push_back(node);
-	printf("===========\nnode list:\n");
+	/*printf("===========\nnode list:\n");
 	for(int i=0; i<(int)node_list.size(); i++)
 	{
 		printf("%d\n",i);
@@ -46,12 +46,50 @@ void Model::add_node(Node* node)
 	for(auto w : weight_set) {
 		printf("%d -> %d\n",w.first->get_idx(),w.second->get_idx()); fflush(stdout);
 	}
-	printf("============\n\n"); fflush(stdout);
+	printf("============\n\n"); fflush(stdout);*/
 }
 
 Node* Model::get_node_by_idx(int idx)
 {
 	return node_list[idx];
+}
+
+Idx Model::get_idx_by_node(Node* node)
+{
+	const int NODE_LIST_SIZE = (int)node_list.size();
+	for(int i=0; i<NODE_LIST_SIZE; i++) {
+		if(node_list[i] == node) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+void Model::remove_node(Node* node)
+{
+	int node_list_size = (int)node_list.size();
+	auto node_it = find(node_list.begin(), node_list.end(), node);
+	if(node_it != node_list.end()) {
+		node_list.erase(node_it);
+	}
+
+	for(auto pair : weight_set) {
+		if(pair.first == node || pair.second == node) {
+			weight_set.erase(pair);
+		}
+	}
+	
+	delete(node);
+	reindex();
+}
+
+void Model::reindex()
+{
+	const int NODE_LIST_SIZE = (int)node_list.size();
+	for(int i=0; i<NODE_LIST_SIZE; i++){
+		node_list[i]->set_idx(i);
+	}
 }
 
 
@@ -65,32 +103,68 @@ void Model::add_weight(Idx start_node_idx, Idx end_node_idx)
 		return;
 	}
 
-	//TODO
+	Weight* weight = new Weight(start_node, end_node);
+	start_node -> output_weight_list.push_back(weight);
+	end_node -> input_weight_list.push_back(weight);
+	
+	update_weight_set(weight);
 }
 
-void Model::add_weights(vector<Idx> start_node_idx_list, vecrot<Idx> end_node_idx_list)
+void Model::add_weights(vector<Idx> start_node_idx_list, vector<Idx> end_node_idx_list)
 {
-	//TODO
+	for(auto i : start_node_idx_list) {
+		for(auto j : end_node_idx_list) {
+			add_weight(i,j);
+		}
+	}
 }
 
 bool Model::check_weight_exists(Node* a, Node* b)
 {
-	if(a == b)
+	if(a == b) {
 		return true;
-	if(weight_set.find(make_pair(a,b)) != weight_set.end())
+	}
+	if(weight_set.find(make_pair(a,b)) != weight_set.end()) {
 		return true;
+	}
 	return false;
 }
 
 void Model::update_weight_set(Weight* w)
 {
 	weight_set.insert(make_pair(w->getSrc(),w->getDst()));
-	weight_list.push_back(w);
 }
 
-void Model::remove_weight_set(Weight* w)
+void Model::remove_weight(Weight* w)
 {
-	weight_set.erase(make_pair(w->getSrc(),w->getDst()));
+	Idx start_idx = get_idx_by_node(w -> getSrc());
+	Idx end_idx = get_idx_by_node(w -> getDst());
+	
+	remove_weight(start_idx, end_idx);
+}
+
+void Model::remove_weight(Idx start_node_idx, Idx end_node_idx)
+{
+	Node* start_node = get_node_by_idx(start_node_idx);
+	Node* end_node = get_node_by_idx(end_node_idx);
+	
+	vector<Weight*>& start_list = start_node -> output_weight_list;
+	const int START_LIST_SIZE = (int)start_list.size();
+	for(int i=0; i<START_LIST_SIZE; i++) {
+		if(start_list[i] -> getDst() == end_node) {
+			start_list.erase(start_list.begin() + i);
+		}
+	}
+
+	vector<Weight*>& end_list = end_node -> input_weight_list;
+	const int END_LIST_SIZE = (int)end_list.size();
+	for(int i=0; i<END_LIST_SIZE; i++) {
+		if(end_list[i] -> getSrc() == start_node) {
+			end_list.erase(end_list.begin() + i);
+		}
+	}
+
+	weight_set.erase(make_pair(start_node, end_node));
 }
 
 
@@ -103,24 +177,6 @@ vector<Node*>::iterator Model::get_first_node_iter()
 vector<Node*>::iterator Model::get_last_node_iter()
 {
 	return node_list.end();
-}
-
-void Model::erase_node(Node* a)
-{
-	for(int i=0; i<(int)node_list.size(); i++){
-		if(node_list[i] == a) {
-			node_list.erase(node_list.begin() + i);
-			break;
-		}
-	}
-	delete(a);
-}
-
-void Model::reindex()
-{
-	for(int i=0; i<(int)node_list.size(); i++){
-		node_list[i]->set_idx(i);
-	}
 }
 
 
@@ -183,7 +239,9 @@ void Model::train(long double learning_rate, Data& input_data, Data& output_data
 void Model::train(long double learning_rate, vector<Data>& input_data_list, vector<Data>& output_data_list)
 {
 	assert(input_data_list.size() == output_data_list.size());
-	for(int i=0; i<(int)output_data_list.size(); i++) {
+
+	const int OUTPUT_DATA_LIST_SIZE = (int)output_data_list.size();
+	for(int i=0; i<OUTPUT_DATA_LIST_SIZE; i++) {
 		train(learning_rate, input_data_list[i], output_data_list[i]);
 	}
 }
@@ -191,7 +249,8 @@ void Model::train(long double learning_rate, vector<Data>& input_data_list, vect
 Data Model::get_output(Data& input_data)
 {
 	Data output;
-	for(int i=0; i<(int)input_data.size(); i++) {
+	const int INPUT_DATA_SIZE = (int)input_data.size();
+	for(int i=0; i<INPUT_DATA_SIZE; i++) {
 		input_node_list[i] -> set_input(input_data[i]);
 	}
 
@@ -205,7 +264,8 @@ Data Model::get_output(Data& input_data)
 vector<Data> Model::get_output(vector<Data>& input_data_list)
 {
 	vector<Data> output_list;
-	for(int i=0; i<(int)input_data_list.size(); i++) {
+	const int INPUT_DATA_LIST_SIZE = (int)input_data_list.size();
+	for(int i=0; i<INPUT_DATA_LIST_SIZE; i++) {
 		output_list.push_back(get_output(input_data_list[i]));
 	}
 	return output_list;

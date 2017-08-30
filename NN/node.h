@@ -23,7 +23,7 @@ public:
 	vector<Weight*> output_weight_list;
 
 	Node(){};
-	Node(int x, int y, int idx);
+	Node(int idx);
 	Node(Node* node, int idx);
 	void set_idx(int idx);
 	int get_idx();
