@@ -65,8 +65,7 @@ long double Node::get_linear_output()
 }
 
 long double Node::get_output() //TODO: needs to be cached
-{
-	
+{	
 	OUTPUT_CNT++;
 	long double sum = get_linear_output();
 	if(input_weight_list.size()==0)
