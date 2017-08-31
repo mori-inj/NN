@@ -3,8 +3,6 @@
 #include "function.h"
 #include <assert.h>
 
-using namespace std;
-
 Model::Model()
 {
 }

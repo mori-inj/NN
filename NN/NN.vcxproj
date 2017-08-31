@@ -85,6 +85,7 @@
     <ClCompile Include="weight.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="fnn.h" />
     <ClInclude Include="function.h" />
     <ClInclude Include="model.h" />
     <ClInclude Include="node.h" />

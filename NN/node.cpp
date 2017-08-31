@@ -8,7 +8,7 @@ Node::Node(int idx)
 {
 	bias = 0.5;
 	this->idx = idx;
-	input_node = true;
+	input_node = ;//true;
 	
 	target_output = 0;
 }

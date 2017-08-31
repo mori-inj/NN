@@ -1,6 +1,6 @@
 #include <windows.h>
 #include <gdiplus.h>
-#include "model.h"
+#include "fnn.h"
 //#include "resource.h"
 using namespace Gdiplus;
 #pragma comment(lib, "gdiplus")
