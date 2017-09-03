@@ -8,7 +8,8 @@ Node::Node(int idx)
 {
 	bias = 0.5;
 	this->idx = idx;
-	input_node = ;//true;
+	is_input_node = false;
+	is_output_node = false;
 	
 	target_output = 0;
 }
@@ -19,7 +20,8 @@ Node::Node(Node* node, int idx)
 	input = node->get_input();
 	bias = node->get_bias();
 	
-	input_node = node->input_node;
+	is_input_node = node->is_input_node;
+	is_output_node = node->is_output_node;
 	
 	target_output = 0;
 }
@@ -68,12 +70,11 @@ long double Node::get_output() //TODO: needs to be cached
 {	
 	OUTPUT_CNT++;
 	long double sum = get_linear_output();
-	if(input_weight_list.size()==0)
+	if(input_weight_list.size()==0) {
 		return sum;
-
+	}
 	return sigmoid(10, sum);
 }
-
 
 void Node::set_target_output(long double x)
 {

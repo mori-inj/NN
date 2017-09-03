@@ -24,10 +24,10 @@
     <ClCompile Include="node.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="von.cpp">
+    <ClCompile Include="weight.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="weight.cpp">
+    <ClCompile Include="NN.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

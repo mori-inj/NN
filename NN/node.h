@@ -17,7 +17,8 @@ private:
 	long double delta;
 	vector<long double> grad;
 public:
-	bool input_node;
+	bool is_input_node;
+	bool is_output_node;
 
 	vector<Weight*> input_weight_list;
 	vector<Weight*> output_weight_list;

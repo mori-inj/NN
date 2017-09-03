@@ -24,27 +24,25 @@ void Model::add_new_node()
 	add_node(node);
 }
 
+void Model::add_new_input_node()
+{
+	Node* node = new Node((int)node_list.size());
+	node->is_input_node = true;
+	add_node(node);
+	input_node_list.push_back(node);
+}
+
+void Model::add_new_output_node()
+{
+	Node* node = new Node((int)node_list.size());
+	node->is_output_node = true;
+	add_node(node);
+	output_node_list.push_back(node);
+}
+
 void Model::add_node(Node* node)
 {
 	node_list.push_back(node);
-	/*printf("===========\nnode list:\n");
-	for(int i=0; i<(int)node_list.size(); i++)
-	{
-		printf("%d\n",i);
-		for(int j=0; j<(int)node_list[i]->input_weight_list.size(); j++) {
-			printf("  %d -> %d\n", node_list[i]->input_weight_list[j]->getSrc()->get_idx(), i); fflush(stdout);
-		}
-		for(int j=0; j<(int)node_list[i]->output_weight_list.size(); j++) {
-			printf("  %d -> %d\n", i, node_list[i]->output_weight_list[j]->getDst()->get_idx()); fflush(stdout);
-		}
-	}
-	printf("============\n\n"); fflush(stdout);
-
-	printf("===========\nweight set:\n");
-	for(auto w : weight_set) {
-		printf("%d -> %d\n",w.first->get_idx(),w.second->get_idx()); fflush(stdout);
-	}
-	printf("============\n\n"); fflush(stdout);*/
 }
 
 Node* Model::get_node_by_idx(int idx)
@@ -70,6 +68,22 @@ void Model::remove_node(Node* node)
 	auto node_it = find(node_list.begin(), node_list.end(), node);
 	if(node_it != node_list.end()) {
 		node_list.erase(node_it);
+	}
+
+	if(node->is_input_node) {
+		int node_list_size = (int)input_node_list.size();
+		auto node_it = find(input_node_list.begin(), input_node_list.end(), node);
+		if(node_it != input_node_list.end()) {
+			input_node_list.erase(node_it);
+		}
+	}
+
+	if(node->is_output_node) {
+		int node_list_size = (int)output_node_list.size();
+		auto node_it = find(output_node_list.begin(), output_node_list.end(), node);
+		if(node_it != output_node_list.end()) {
+			output_node_list.erase(node_it);
+		}
 	}
 
 	for(auto pair : weight_set) {
@@ -179,7 +193,7 @@ vector<Node*>::iterator Model::get_last_node_iter()
 
 
 
-void Model::train(long double learning_rate, Data& input_data, Data& output_data)
+void Model::train(long double learning_rate, int ITER, Data& input_data, Data& output_data)
 {
 	assert(input_data.size() == input_node_list.size());
 	assert(output_data.size() == output_node_list.size());
@@ -187,9 +201,9 @@ void Model::train(long double learning_rate, Data& input_data, Data& output_data
 	const int INPUT_SIZE = (int)input_data.size();
 	const int OUTPUT_SIZE = (int)output_data.size();
 
-	for(int iter = 0; iter<100; iter++) {
+	for(int iter = 0; iter<ITER; iter++) {
 		//이거 전체를 training data전체에 대해 반복, 한 번 가중치 갱신에 쓰인 데이터가 여러번 쓰여야 하는게 맞다는걸 확인하기
-		for(auto data : input_node_list) {
+		//for(auto data : input_node_list) {
 			
 			//input node는 input 설정
 			for(int i = 0; i < INPUT_SIZE; i++) {
@@ -230,17 +244,25 @@ void Model::train(long double learning_rate, Data& input_data, Data& output_data
 			}
 			printf("============\n\n"); fflush(stdout);*/
 			
-		}
+		//}
 	}
 }
 
-void Model::train(long double learning_rate, vector<Data>& input_data_list, vector<Data>& output_data_list)
+void Model::train(long double learning_rate, int ITER, vector<Data>& input_data_list, vector<Data>& output_data_list)
 {
 	assert(input_data_list.size() == output_data_list.size());
 
 	const int OUTPUT_DATA_LIST_SIZE = (int)output_data_list.size();
 	for(int i=0; i<OUTPUT_DATA_LIST_SIZE; i++) {
-		train(learning_rate, input_data_list[i], output_data_list[i]);
+		train(learning_rate, ITER, input_data_list[i], output_data_list[i]);
+		if(i%100==0) printf("(%d)th data | class: %.0Lf   data:(%Lf, %Lf)   predicted: %Lf | error: %Lf\n",
+			i,
+			output_data_list[i][0],
+			input_data_list[i][0], input_data_list[i][1], 
+			get_output(input_data_list[i])[0],
+			get_error(input_data_list, output_data_list)
+			);
+		fflush(stdout);
 	}
 }
 
@@ -272,9 +294,9 @@ vector<Data> Model::get_output(vector<Data>& input_data_list)
 long double Model::cross_entropy_multi(Data& y, Data& h)
 {
 	assert(y.size() == h.size());
-	int size = (int)y.size();
+	int SIZE = (int)y.size();
 	long double error_sum = 0;
-	for(int i=0; i<size; i++) {
+	for(int i=0; i<SIZE; i++) {
 		error_sum += cross_entropy(y[i], h[i]);
 	}
 
@@ -283,25 +305,51 @@ long double Model::cross_entropy_multi(Data& y, Data& h)
 
 long double Model::get_error(Data& input_data, Data& output_data)
 {
-	long double error_sum = 0;
 	Data output = get_output(input_data);
 
-	error_sum += cross_entropy_multi(output_data, output);
-
-	return error_sum;
+	return cross_entropy_multi(output_data, output);
 }
 
 long double Model::get_error(vector<Data>& input_data_list, vector<Data>& output_data_list)
 {
 	assert(input_data_list.size() == output_data_list.size());
 	long double error_sum = 0;
-	int output_size = (int)output_data_list.size();
+	int OUTPUT_SIZE = (int)output_data_list.size();
 	
-	for(int i=0; i<output_size; i++) {
+	for(int i=0; i<OUTPUT_SIZE; i++) {
 		error_sum += get_error(input_data_list[i], output_data_list[i]);
 	}
 
-	return error_sum / output_size;
+	return error_sum / OUTPUT_SIZE;
+}
+
+long double Model::get_precision(Data& input_data, Data& output_data)
+{
+	int SIZE = (int)output_data.size();
+	long double precision = 0;
+	Data output = get_output(input_data);
+
+	for(int i=0; i<SIZE; i++) {
+		if(output_data[i] == 1)
+			precision += output[i];
+		else
+			precision += 1-output[i];
+	}
+	
+	return precision;
+}
+
+long double Model::get_precision(vector<Data>& input_data_list, vector<Data>& output_data_list)
+{
+	assert(input_data_list.size() == output_data_list.size());
+	long double precision = 0;
+	int OUTPUT_SIZE = (int)output_data_list.size();
+
+	for(int i=0; i<OUTPUT_SIZE; i++) {
+		precision += get_precision(input_data_list[i], output_data_list[i]);
+	}
+
+	return precision / OUTPUT_SIZE;
 }
 
 
@@ -309,4 +357,28 @@ long double Model::get_error(vector<Data>& input_data_list, vector<Data>& output
 int Model::count_input_node()
 {
 	return (int)input_node_list.size();
+}
+
+
+
+void Model::print()
+{
+	printf("===========\nnode list:\n");
+	for(int i=0; i<(int)node_list.size(); i++)
+	{
+		printf("%d\n",i);
+		for(int j=0; j<(int)node_list[i]->input_weight_list.size(); j++) {
+			printf("  %d -> %d\n", node_list[i]->input_weight_list[j]->getSrc()->get_idx(), i); fflush(stdout);
+		}
+		for(int j=0; j<(int)node_list[i]->output_weight_list.size(); j++) {
+			printf("  %d -> %d\n", i, node_list[i]->output_weight_list[j]->getDst()->get_idx()); fflush(stdout);
+		}
+	}
+	printf("============\n\n"); fflush(stdout);
+
+	printf("===========\nweight set:\n");
+	for(auto w : weight_set) {
+		printf("%d -> %d\n",w.first->get_idx(),w.second->get_idx()); fflush(stdout);
+	}
+	printf("============\n\n"); fflush(stdout);
 }
