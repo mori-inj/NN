@@ -114,8 +114,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		//read data
 		int SIZE;
 
-		fp0 = fopen("../data/temp_class0_5000","r");
-		fp1 = fopen("../data/temp_class1_5000","r");
+		fp0 = fopen("C:/AI/NN/data/temp_class0_5000","r");
+		fp1 = fopen("C:/AI/NN/data/temp_class1_5000","r");
+		
 		fscanf(fp0, "%d", &class0_data_size);
 		fscanf(fp1, "%d", &class1_data_size);
 		for(int i=0; i<class0_data_size; i++) {
@@ -153,8 +154,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		}
 
 		//read test data
-		fp0 = fopen("../data/temp_class0_500","r");
-		fp1 = fopen("../data/temp_class1_500","r");
+		fp0 = fopen("C:/AI/NN/data/temp_class0_500","r");
+		fp1 = fopen("C:/AI/NN/data/temp_class1_500","r");
 
 		fscanf(fp0, "%d", &class0_data_size);
 		fscanf(fp1, "%d", &class1_data_size);
@@ -191,63 +192,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			output_test_data_list[idx0] = output_test_data_list[idx1];
 			output_test_data_list[idx1] = temp_output;
 		}
-
-		//train
-		RECT temp;
-		GetWindowRect(hWnd, &temp);
-		SendMessage(plotWindowHwnd, WM_CLOSE, NULL, NULL);
-				plotWindowHwnd = CreateWindow(
-							L"Plot",
-							L"Plot",
-							WS_BORDER | WS_CHILD | WS_POPUPWINDOW | WS_OVERLAPPEDWINDOW,
-							temp.left - 300,
-							temp.top,
-							300,
-							300,
-							hWnd,
-							(HMENU)0,
-							g_hInst,
-							NULL
-							);
-		ShowWindow(plotWindowHwnd, SW_SHOW);
-
-
-		printf("before train: %Lf (%Lf%%), test: %Lf (%Lf%%)\n",
-			model.get_error(input_data_list, output_data_list), 
-			model.get_precision(input_data_list, output_data_list)*100, 
-			model.get_error(input_test_data_list, output_test_data_list),
-			model.get_precision(input_test_data_list, output_test_data_list)*100);
-		model.train(0.1, 30, input_data_list, output_data_list);
-		
-		printf("after 1 train: %Lf (%Lf%%), test: %Lf (%Lf%%)\n",
-			model.get_error(input_data_list, output_data_list), 
-			model.get_precision(input_data_list, output_data_list)*100, 
-			model.get_error(input_test_data_list, output_test_data_list),
-			model.get_precision(input_test_data_list, output_test_data_list)*100);
-		model.train(0.01, 40, input_data_list, output_data_list);
-		
-		printf("after 2 train: %Lf (%Lf%%), test: %Lf (%Lf%%)\n",
-			model.get_error(input_data_list, output_data_list), 
-			model.get_precision(input_data_list, output_data_list)*100, 
-			model.get_error(input_test_data_list, output_test_data_list),
-			model.get_precision(input_test_data_list, output_test_data_list)*100);
-		model.train(0.001, 60, input_data_list, output_data_list);
-		
-		printf("after 3 train: %Lf (%Lf%%), test: %Lf (%Lf%%)\n",
-			model.get_error(input_data_list, output_data_list), 
-			model.get_precision(input_data_list, output_data_list)*100, 
-			model.get_error(input_test_data_list, output_test_data_list),
-			model.get_precision(input_test_data_list, output_test_data_list)*100);
-
-		//result
-		printf("train error: %Lf (%Lf%%)\ntest error: %Lf (%Lf%%)\n",
-			model.get_error(input_data_list, output_data_list), 
-			model.get_precision(input_data_list, output_data_list)*100, 
-			model.get_error(input_test_data_list, output_test_data_list),
-			model.get_precision(input_test_data_list, output_test_data_list)*100);
 		}
-
-		SetTimer(hWnd, 1, 10, 0);
+		//SetTimer(hWnd, 1, 10, 0);
+		InvalidateRect(hWnd, NULL, FALSE);
 		break;
 
 	case WM_TIMER:
@@ -269,6 +216,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		//FillRect(MemDC, &crt, hBrush);
 		SetBkColor(MemDC, RGB(255, 255, 255));
 
+		RECT temp;
+		GetWindowRect(hWnd, &temp);
+		SendMessage(plotWindowHwnd, WM_CLOSE, NULL, NULL);
+				plotWindowHwnd = CreateWindow(
+							L"Plot",
+							L"Plot",
+							WS_BORDER | WS_CHILD | WS_POPUPWINDOW | WS_OVERLAPPEDWINDOW,
+							temp.left - 300,
+							temp.top,
+							300,
+							300,
+							hWnd,
+							(HMENU)0,
+							g_hInst,
+							NULL
+							);
+		ShowWindow(plotWindowHwnd, SW_SHOW);
 
 
 		BitBlt(hdc, 0, 0, crt.right, crt.bottom, MemDC, 0, 0, SRCCOPY);
@@ -311,6 +275,13 @@ LRESULT CALLBACK WndProcPlot(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_TIMER:
 		{
+			printf("train: %Lf (%Lf%%), test: %Lf (%Lf%%)\n",
+			model.get_error(input_data_list, output_data_list), 
+			model.get_precision(input_data_list, output_data_list)*100, 
+			model.get_error(input_test_data_list, output_test_data_list),
+			model.get_precision(input_test_data_list, output_test_data_list)*100);
+			model.train(0.001, 30, input_data_list, output_data_list);
+
 			InvalidateRect(hWnd, NULL, FALSE);
 			break;
 		}
@@ -340,12 +311,13 @@ LRESULT CALLBACK WndProcPlot(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			SelectObject(MemDC, oldPen);
 			DeleteObject(hPen);
 
-
 			BitBlt(hdc, 0, 0, crt.right, crt.bottom, MemDC, 0, 0, SRCCOPY);
 			SelectObject(MemDC, OldBit);
 			DeleteDC(MemDC);
 			DeleteObject(hBit);
 			EndPaint(hWnd, &ps);
+			
+			PostMessage(plotWindowHwnd, WM_TIMER, NULL, NULL);
 			break;
 		}
 		case WM_DESTROY:
