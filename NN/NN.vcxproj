@@ -146,6 +146,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="fnn.cpp" />
     <ClCompile Include="function.cpp" />
     <ClCompile Include="model.cpp" />
     <ClCompile Include="node.cpp" />

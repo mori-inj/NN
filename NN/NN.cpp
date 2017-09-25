@@ -98,17 +98,33 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	case WM_CREATE:
 		if(1) {
 		//build model
+		int l1 = 4, l2 = 5;
 		srand((unsigned)time(NULL));
 		model.add_new_input_node();
 		model.add_new_input_node();
 		model.add_new_output_node();
 
-		for(int i=0; i<4; i++) {
+		/*for(int i=0; i<l1; i++) {
 			model.add_new_node();
 			model.add_weight(0, i+3);
 			model.add_weight(1, i+3);
 			model.add_weight(i+3, 2);
+		}*/
+
+		for(int i=0; i<l1; i++) {
+			model.add_new_node();
+			model.add_weight(0, i+3);
+			model.add_weight(1, i+3);
 		}
+		for(int i=0; i<l2; i++) {
+			model.add_new_node();
+			for(int j=0; j<l1; j++) {
+				model.add_weight(j+3, i+3+l1);
+			}		
+			model.add_weight(i+3+l1, 2);
+		}
+
+
 		model.print();
 
 		//read data
@@ -280,7 +296,7 @@ LRESULT CALLBACK WndProcPlot(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			model.get_precision(input_data_list, output_data_list)*100, 
 			model.get_error(input_test_data_list, output_test_data_list),
 			model.get_precision(input_test_data_list, output_test_data_list)*100);
-			model.train(0.001, 30, input_data_list, output_data_list);
+			model.train(0.001, 10, input_data_list, output_data_list);
 
 			InvalidateRect(hWnd, NULL, FALSE);
 			break;
@@ -310,6 +326,53 @@ LRESULT CALLBACK WndProcPlot(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			LineTo(MemDC, 140, 10);
 			SelectObject(MemDC, oldPen);
 			DeleteObject(hPen);
+
+			//draw data
+			int SIZE = (int)input_data_list.size();
+			for(int i=0; i<SIZE/10; i++) {
+				long double x0 = input_data_list[i][0];
+				long double x1 = input_data_list[i][1];
+				long double y = output_data_list[i][0];
+				long double h = model.get_output(input_data_list[i])[0];
+
+				int red, green, blue;
+				if(y >= 0.5) {
+					red = 255;
+					green = 0;
+					blue = 255;
+				} else {
+					red = 0;
+					green = 255;
+					blue = 255;
+				}
+
+				if(h>= 0.5) {
+					
+				} else {
+					red /= 2;
+					green /= 2;
+					blue /= 2;
+				}
+
+				x0 = x0 * 240 + 20;
+				x1 = -x1 * 240 + 250;
+				long double r = 2;
+				//Ellipse(MemDC, x0-r, x1-r, x0+r, x1+r);
+				hPen = CreatePen(PS_SOLID, 1, RGB(red,green,blue));
+				oldPen = (HPEN)SelectObject(MemDC, hPen);
+
+				MoveToEx(MemDC, x0-r, x1-r, NULL); 
+				LineTo(MemDC, x0+r,x1-r);
+				LineTo(MemDC, x0+r, x1+r);
+				LineTo(MemDC, x0-r, x1+r);
+				LineTo(MemDC, x0-r, x1-r);
+
+				
+				SelectObject(MemDC, oldPen);
+				DeleteObject(hPen);
+			}
+
+
 
 			BitBlt(hdc, 0, 0, crt.right, crt.bottom, MemDC, 0, 0, SRCCOPY);
 			SelectObject(MemDC, OldBit);

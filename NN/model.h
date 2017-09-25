@@ -12,7 +12,7 @@ using namespace std;
 
 class Model
 {
-private:
+protected:
 	vector<Node*> input_node_list;
 	vector<Node*> output_node_list;
 
