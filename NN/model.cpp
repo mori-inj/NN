@@ -309,7 +309,6 @@ Data Model::get_output(Data& input_data)
 	for(auto node : output_node_list) {
 		output.push_back(node -> get_output());
 	}
-
 	return output;
 }
 
@@ -351,7 +350,6 @@ long double Model::get_error(vector<Data>& input_data_list, vector<Data>& output
 	for(int i=0; i<OUTPUT_SIZE; i++) {
 		error_sum += get_error(input_data_list[i], output_data_list[i]);
 	}
-
 	return error_sum / OUTPUT_SIZE;
 }
 
@@ -367,7 +365,6 @@ long double Model::get_precision(Data& input_data, Data& output_data)
 		else
 			precision += 1-output[i];
 	}
-	
 	return precision;
 }
 
@@ -380,7 +377,6 @@ long double Model::get_precision(vector<Data>& input_data_list, vector<Data>& ou
 	for(int i=0; i<OUTPUT_SIZE; i++) {
 		precision += get_precision(input_data_list[i], output_data_list[i]);
 	}
-
 	return precision / OUTPUT_SIZE;
 }
 
