@@ -14,6 +14,8 @@ long double sigmoid(long double b, long double x);
 long double deriv_sigmoid(long double b, long double x);
 long double ReLU(long double x);
 long double deriv_ReLU(long double x);
+long double PReLU(long double x);
+long double deriv_PReLU(long double x);
 long double exponential_converge(long double x);
 long double deriv_exponential_converge(long double x);
 

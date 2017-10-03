@@ -6,7 +6,7 @@ typedef vector<Node*> Layer;
 
 class FNN : public Model
 {
-private:
+protected:
 	Layer* input_layer;
 	vector<Layer*> layer_list;
 	Layer* output_layer;

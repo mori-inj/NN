@@ -150,6 +150,7 @@
   <ItemGroup>
     <ClCompile Include="fnn.cpp" />
     <ClCompile Include="function.cpp" />
+    <ClCompile Include="gdx.cpp" />
     <ClCompile Include="model.cpp" />
     <ClCompile Include="node.cpp" />
     <ClCompile Include="NN.cpp" />
@@ -158,6 +159,7 @@
   <ItemGroup>
     <ClInclude Include="fnn.h" />
     <ClInclude Include="function.h" />
+    <ClInclude Include="gdx.h" />
     <ClInclude Include="model.h" />
     <ClInclude Include="node.h" />
     <ClInclude Include="weight.h" />

@@ -33,6 +33,7 @@ public:
 	void reindex();
 	
 	void add_weight(Idx start_node_idx, Idx end_node_idx);
+	void add_weight(Idx start_node_idx, Idx end_node_idx, long double w);
 	void add_weights(vector<Idx> start_node_idx_list, vector<Idx> end_node_idx_list);
 	bool check_weight_exists(Node* a, Node* b);
 	void update_weight_set(Weight* w);
@@ -42,9 +43,10 @@ public:
 	vector<Node*>::iterator get_first_node_iter();
 	vector<Node*>::iterator get_last_node_iter();
 	
-	void train(long double learning_rate, int ITER, Data& input_data, Data& output_data);
-	void train(long double learning_rate, int ITER, vector<Data>& input_data_list, vector<Data>& output_data_list);
+	void train(long double learning_rate, Data& input_data, Data& output_data);
+	void train(long double learning_rate, vector<Data>& input_data_list, vector<Data>& output_data_list);
 	Data get_output(Data& input_data);
+	Data get_linear_output(Data& input_data);
 	vector<Data> get_output(vector<Data>& input_data_list);
 	long double cross_entropy_multi(Data& y, Data& h);
 	long double get_error(Data& input_data, Data& output_data);
@@ -55,7 +57,8 @@ public:
 	int count_input_node();
 
 	void print();
-	void print_weights();
+	void print_bias_and_weights();
+	void read_bias_and_weights(char* filename);
 };
 
 #endif

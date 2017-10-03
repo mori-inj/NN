@@ -48,6 +48,11 @@ int Node::get_idx()
 	return idx;
 }
 
+void Node::set_bias(long double b)
+{
+	bias = b;
+}
+
 long double Node::get_bias()
 {
 	return bias;

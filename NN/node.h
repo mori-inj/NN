@@ -39,6 +39,7 @@ public:
 	Node(Node* node, int idx);
 	void set_idx(int idx);
 	int get_idx();
+	void set_bias(long double b);
 	long double get_bias();
 	long double get_input();
 	void set_input(long double input);

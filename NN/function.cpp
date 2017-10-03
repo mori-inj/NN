@@ -59,6 +59,22 @@ long double deriv_ReLU(long double x)
 		return 1;
 }
 
+long double PReLU(long double x)
+{
+	if(x<=0)
+		return 0.1*x;
+	else
+		return x;
+}
+
+long double deriv_PReLU(long double x)
+{
+	if(x<=0)
+		return 0.1;
+	else
+		return 1;
+}
+
 long double exponential_converge(long double x)
 {
 	return 1 - powl(e, -x);
@@ -74,7 +90,7 @@ long double deriv_exponential_converge(long double x)
 
 long double cross_entropy(long double y, long double h)
 {
-	if(h <= 1e-7) h = 1e-7;
-	if(1-h <= 1e-7) h = 1 - 1e-7;
+	if(h <= 1e-10) h = 1e-10;
+	if(1-h <= 1e-10) h = 1 - 1e-10;
 	return - (y * log(h) + (1-y)*log(1-h));
 }
