@@ -154,10 +154,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			fseek(fp1, 8+i, SEEK_SET);
 			fread(&label, 1, 1, fp1);
 			for(int j=0; j<10; j++) {
-				if(label == j)
-					output_data.push_back(1);
-				else
-					output_data.push_back(0);
+				output_data.push_back(label==j);
 			}
 			input_data_list.push_back(input_data);
 			output_data_list.push_back(output_data);
@@ -210,15 +207,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			fseek(fp1, 8+i, SEEK_SET);
 			fread(&label, 1, 1, fp1);
 			for(int j=0; j<10; j++) {
-				if(label == j)
-					output_data.push_back(1);
-				else
-					output_data.push_back(0);
+				output_data.push_back(label==j);
 			}
 			input_test_data_list.push_back(input_data);
 			output_test_data_list.push_back(output_data);
-
-			fflush(stdout);
 		}
 		
 		//shuffle
@@ -314,6 +306,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		//draw data
 		int px=20, py=20;
 		for(int idx=0; idx<20; idx++) {
+			for(int i=0; i<10; i++) printf("%.0Lf ", output_data_list[idx][i]);
+			printf("\n");fflush(stdout);
 			for(int i=0; i<28; i++) {
 				for(int j=0; j<28; j++) {
 					LD clr = input_data_list[idx][i*28+j];
@@ -321,6 +315,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 					oldPen = (HPEN)SelectObject(MemDC, hPen);
 					MoveToEx(MemDC, px+j, py+i, NULL); 
 					LineTo(MemDC, px+j+1, py+i);
+					SelectObject(MemDC, oldPen);
+					DeleteObject(hPen);
 				}
 			}
 			px += 28;
