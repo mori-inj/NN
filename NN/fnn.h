@@ -11,10 +11,11 @@ private:
 	vector<Layer*> layer_list;
 	Layer* output_layer;
 public:
-	void add_layer(int num);
-	void add_layer(int num, int idx);
+	void add_layer(int num, function<LD(LD)> act, function<LD(LD)> deriv_act);
 	void add_input_layer(int num);
 	void add_output_layer(int num);
+
+	void add_all_weights();
 };
 
 #endif

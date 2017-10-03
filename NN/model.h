@@ -23,7 +23,7 @@ public:
 	~Model();
 	int get_node_num() { return (int)node_list.size(); }
 	
-	void add_new_node();
+	void add_new_node(function<LD(LD)> act, function<LD(LD)> deriv_act);
 	void add_new_input_node();
 	void add_new_output_node();
 	void add_node(Node* node);
@@ -55,6 +55,7 @@ public:
 	int count_input_node();
 
 	void print();
+	void print_weights();
 };
 
 #endif

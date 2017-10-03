@@ -1,7 +1,7 @@
 #include "function.h"
 
 
-long double identity(long double x)
+long double idt(long double x)
 {
 	return x;
 }
@@ -20,13 +20,16 @@ long double step(long double x)
 
 long double sigmoid(long double x)
 {
-	return 1/(1+powl(e,-x));
+	//return 1/(1+powl(e,-x));
+	return 1/(1+powl(e,-10*x));
 }
 
 long double deriv_sigmoid(long double x)
 {
-	long double s = sigmoid(x);
-	return s*(1-s);
+	/*long double s = sigmoid(x);
+	return s*(1-s);*/
+	long double s = sigmoid(10,x);
+	return 10*s*(1-s);
 }
 
 long double sigmoid(long double b, long double x)
@@ -48,10 +51,30 @@ long double ReLU(long double x)
 		return x;
 }
 
+long double deriv_ReLU(long double x)
+{
+	if(x<=0)
+		return 0;
+	else
+		return 1;
+}
+
+long double exponential_converge(long double x)
+{
+	return 1 - powl(e, -x);
+}
+
+long double deriv_exponential_converge(long double x)
+{
+	return powl(e, -x);
+}
+
 
 
 
 long double cross_entropy(long double y, long double h)
 {
+	if(h <= 1e-7) h = 1e-7;
+	if(1-h <= 1e-7) h = 1 - 1e-7;
 	return - (y * log(h) + (1-y)*log(1-h));
 }

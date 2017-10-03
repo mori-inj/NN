@@ -17,11 +17,11 @@ public:
 	Weight(Node* src);
 	Weight(Weight& weight);
 	Weight(Node* src, Node* dst);
-	Node* getSrc();
-	Node* getDst();
-	long double getW();
-	void setDst(Node& dst);
-	void setW(long double w);
+	Node* get_src();
+	Node* get_dst();
+	long double get_w();
+	void set_dst(Node& dst);
+	void set_w(long double w);
 };
 
 #endif

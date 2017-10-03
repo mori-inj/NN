@@ -18,15 +18,19 @@ Model::~Model()
 
 
 
-void Model::add_new_node()
+void Model::add_new_node(function<LD(LD)> act, function<LD(LD)> deriv_act)
 {
-	Node* node = new Node((int)node_list.size());
+	Node* node = new Node((int)node_list.size(), act, deriv_act);
 	add_node(node);
 }
 
 void Model::add_new_input_node()
 {
-	Node* node = new Node((int)node_list.size());
+	Node* node = new Node((int)node_list.size(), 
+		//this doesn't need to be done for input nodes
+		[](LD x) -> LD{return idt(x);},
+		[](LD x) -> LD{return 1;}
+	);
 	node->is_input_node = true;
 	add_node(node);
 	input_node_list.push_back(node);
@@ -34,7 +38,10 @@ void Model::add_new_input_node()
 
 void Model::add_new_output_node()
 {
-	Node* node = new Node((int)node_list.size());
+	Node* node = new Node((int)node_list.size(),
+		[](LD x) -> LD{return sigmoid(x);},
+		[](LD x) -> LD{return deriv_sigmoid(x);}
+	);
 	node->is_output_node = true;
 	add_node(node);
 	output_node_list.push_back(node);
@@ -144,13 +151,13 @@ bool Model::check_weight_exists(Node* a, Node* b)
 
 void Model::update_weight_set(Weight* w)
 {
-	weight_set.insert(make_pair(w->getSrc(),w->getDst()));
+	weight_set.insert(make_pair(w->get_src(),w->get_dst()));
 }
 
 void Model::remove_weight(Weight* w)
 {
-	Idx start_idx = get_idx_by_node(w -> getSrc());
-	Idx end_idx = get_idx_by_node(w -> getDst());
+	Idx start_idx = get_idx_by_node(w -> get_src());
+	Idx end_idx = get_idx_by_node(w -> get_dst());
 	
 	remove_weight(start_idx, end_idx);
 }
@@ -163,7 +170,7 @@ void Model::remove_weight(Idx start_node_idx, Idx end_node_idx)
 	vector<Weight*>& start_list = start_node -> output_weight_list;
 	const int START_LIST_SIZE = (int)start_list.size();
 	for(int i=0; i<START_LIST_SIZE; i++) {
-		if(start_list[i] -> getDst() == end_node) {
+		if(start_list[i] -> get_dst() == end_node) {
 			start_list.erase(start_list.begin() + i);
 		}
 	}
@@ -171,7 +178,7 @@ void Model::remove_weight(Idx start_node_idx, Idx end_node_idx)
 	vector<Weight*>& end_list = end_node -> input_weight_list;
 	const int END_LIST_SIZE = (int)end_list.size();
 	for(int i=0; i<END_LIST_SIZE; i++) {
-		if(end_list[i] -> getSrc() == start_node) {
+		if(end_list[i] -> get_src() == start_node) {
 			end_list.erase(end_list.begin() + i);
 		}
 	}
@@ -201,50 +208,37 @@ void Model::train(long double learning_rate, int ITER, Data& input_data, Data& o
 	const int INPUT_SIZE = (int)input_data.size();
 	const int OUTPUT_SIZE = (int)output_data.size();
 
+	//input node는 input 설정
+	for(int i = 0; i < INPUT_SIZE; i++) {
+		input_node_list[i] -> set_input(input_data[i]);
+	}
+
+	//output node는 output 설정
+	for(int i = 0; i < OUTPUT_SIZE; i++) {
+		output_node_list[i] -> set_target_output(output_data[i]);
+	}
+
 	for(int iter = 0; iter<ITER; iter++) {
-		//이거 전체를 training data전체에 대해 반복, 한 번 가중치 갱신에 쓰인 데이터가 여러번 쓰여야 하는게 맞다는걸 확인하기
-		//for(auto data : input_node_list) {
-			
-			//input node는 input 설정
-			for(int i = 0; i < INPUT_SIZE; i++) {
-				input_node_list[i] -> set_input(input_data[i]);
-			}
+		//cache clear
+		for(auto node : node_list) {
+			node -> is_output_cached = false;
+			node -> is_linear_output_cached = false;
+		}
 
-			//output node는 output 설정
-			for(int i = 0; i < OUTPUT_SIZE; i++) {
-				output_node_list[i] -> set_target_output(output_data[i]);
-			}
+		//delta, grad 계산
+		//input node자체는 delta구할 필요 없지만 재귀적으로 구하기 위해 input부터 시작
+		for(auto node : input_node_list) {
+			node -> calc_delta();
+		}
+		//output node는 grad필요 없음
+		for(auto node : node_list) {
+			node -> calc_grad();
+		}
 
-			//delta, grad 계산
-			//input node자체는 delta구할 필요 없지만 재귀적으로 구하기 위해 input부터 시작
-			for(auto node : input_node_list) {
-				node -> calc_delta();
-			}
-			//output node는 grad필요 없음
-			for(auto node : node_list) {
-				node -> calc_grad();
-			}
-
-			//가중치 갱신 및 새로plot
-			for(auto node : node_list) {
-				node -> update_weight(learning_rate);
-			}
-
-			
-			/*printf("===========\nnode list:\n");
-			for(int i=0; i<(int)node_list.size(); i++)
-			{
-				printf("%d\n",i);
-				for(int j=0; j<(int)node_list[i]->input_weight_list.size(); j++) {
-					printf("  %d -> %d  :%Lf\n", node_list[i]->input_weight_list[j]->getSrc()->get_idx(), i, node_list[i]->input_weight_list[j]->getW()); fflush(stdout);
-				}
-				for(int j=0; j<(int)node_list[i]->output_weight_list.size(); j++) {
-					printf("  %d -> %d  :%Lf\n", i, node_list[i]->output_weight_list[j]->getDst()->get_idx(), node_list[i]->output_weight_list[j]->getW()); fflush(stdout);
-				}
-			}
-			printf("============\n\n"); fflush(stdout);*/
-			
-		//}
+		//가중치 갱신
+		for(auto node : node_list) {
+			node -> update_weight(learning_rate);
+		}
 	}
 }
 
@@ -253,16 +247,10 @@ void Model::train(long double learning_rate, int ITER, vector<Data>& input_data_
 	assert(input_data_list.size() == output_data_list.size());
 
 	const int OUTPUT_DATA_LIST_SIZE = (int)output_data_list.size();
-	for(int i=0; i<OUTPUT_DATA_LIST_SIZE; i++) {
+	const int BATCH_SIZE = 100;
+	for(int i=rand()%BATCH_SIZE; i<OUTPUT_DATA_LIST_SIZE; i+=BATCH_SIZE) {
+		printf("\t%d/%d\n", i, OUTPUT_DATA_LIST_SIZE); fflush(stdout);
 		train(learning_rate, ITER, input_data_list[i], output_data_list[i]);
-		if(i%100==0) printf("(%d)th data | class: %.0Lf   data:(%Lf, %Lf)   predicted: %Lf | error: %Lf\n",
-			i,
-			output_data_list[i][0],
-			input_data_list[i][0], input_data_list[i][1], 
-			get_output(input_data_list[i])[0],
-			get_error(input_data_list, output_data_list)
-			);
-		fflush(stdout);
 	}
 }
 
@@ -270,6 +258,12 @@ Data Model::get_output(Data& input_data)
 {
 	Data output;
 	const int INPUT_DATA_SIZE = (int)input_data.size();
+	
+	for(auto node : node_list) {
+			node -> is_output_cached = false;
+			node -> is_linear_output_cached = false;
+	}
+
 	for(int i=0; i<INPUT_DATA_SIZE; i++) {
 		input_node_list[i] -> set_input(input_data[i]);
 	}
@@ -368,10 +362,10 @@ void Model::print()
 	{
 		printf("%d\n",i);
 		for(int j=0; j<(int)node_list[i]->input_weight_list.size(); j++) {
-			printf("  %d -> %d\n", node_list[i]->input_weight_list[j]->getSrc()->get_idx(), i); fflush(stdout);
+			printf("  %d -> %d\n", node_list[i]->input_weight_list[j]->get_src()->get_idx(), i); fflush(stdout);
 		}
 		for(int j=0; j<(int)node_list[i]->output_weight_list.size(); j++) {
-			printf("  %d -> %d\n", i, node_list[i]->output_weight_list[j]->getDst()->get_idx()); fflush(stdout);
+			printf("  %d -> %d\n", i, node_list[i]->output_weight_list[j]->get_dst()->get_idx()); fflush(stdout);
 		}
 	}
 	printf("============\n\n"); fflush(stdout);
@@ -381,4 +375,23 @@ void Model::print()
 		printf("%d -> %d\n",w.first->get_idx(),w.second->get_idx()); fflush(stdout);
 	}
 	printf("============\n\n"); fflush(stdout);
+}
+
+void Model::print_weights()
+{
+	const int NODE_NUM = (int)node_list.size();
+	for(int i=0; i<NODE_NUM; i++) {
+		printf("%d:%Lf\n",i,node_list[i]->get_bias());
+	}
+	for(int i=0; i<NODE_NUM; i++) {
+		const int OUTPUT_WEIGHT_NUM = (int)node_list[i]->output_weight_list.size();
+		for(int j=0; j<OUTPUT_WEIGHT_NUM; j++) {
+			printf("%d->%d:%Lf\n", 
+				i, 
+				node_list[i]->output_weight_list[j]->get_dst()->get_idx(), 
+				node_list[i]->output_weight_list[j]->get_w()
+				);
+			fflush(stdout);
+		}
+	}
 }

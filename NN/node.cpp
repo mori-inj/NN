@@ -4,14 +4,20 @@
 
 extern int OUTPUT_CNT;
 
-Node::Node(int idx)
+Node::Node(int idx, function<LD(LD)> act, function<LD(LD)> deriv_act)
 {
 	bias = 0.5;
 	this->idx = idx;
 	is_input_node = false;
 	is_output_node = false;
 	
+	is_output_cached = false;
+	is_linear_output_cached = false;
+	
 	target_output = 0;
+
+	activation_function = act;
+	deriv_activation_function = deriv_act;
 }
 
 Node::Node(Node* node, int idx)
@@ -22,8 +28,14 @@ Node::Node(Node* node, int idx)
 	
 	is_input_node = node->is_input_node;
 	is_output_node = node->is_output_node;
+
+	is_output_cached = node->is_output_cached;
+	is_linear_output_cached = node->is_linear_output_cached;
 	
 	target_output = 0;
+
+	activation_function = node->activation_function;
+	deriv_activation_function = node->deriv_activation_function;
 }
 
 void Node::set_idx(int idx)
@@ -54,26 +66,35 @@ void Node::set_input(long double input)
 long double Node::get_linear_output()
 {
 	long double sum = 0;
-	if(input_weight_list.size()==0)
+	if(is_input_node)
 		return this->input;
 
-	for(int i=0; i<(int)input_weight_list.size(); i++)
+	if(is_linear_output_cached)
+		return cached_linear_output;
+
+	const int WEIGHT_SIZE = (int)input_weight_list.size();
+	for(int i=0; i<WEIGHT_SIZE; i++)
 	{
-		sum += ( input_weight_list[i]->getSrc()->get_output() ) * ( input_weight_list[i]->getW() );
+		sum += ( input_weight_list[i]->get_src()->get_output() ) * ( input_weight_list[i]->get_w() );
 	}
 	sum += bias;
 
-	return sum;
+	return cached_linear_output = sum;
 }
 
 long double Node::get_output() //TODO: needs to be cached
 {	
 	OUTPUT_CNT++;
+
+	if(is_output_cached)
+		return cached_output;
+
+	is_output_cached = true;
 	long double sum = get_linear_output();
-	if(input_weight_list.size()==0) {
-		return sum;
+	if(is_input_node) {
+		return cached_output = sum;
 	}
-	return sigmoid(10, sum);
+	return cached_output = activation_function(sum);
 }
 
 void Node::set_target_output(long double x)
@@ -93,9 +114,9 @@ long double Node::calc_delta() //does not check get_delta is valid
 	} else {
 		delta = 0;
 		for(auto it : output_weight_list) {
-			delta += it->getW() * it->getDst()->calc_delta();
+			delta += it->get_w() * it->get_dst()->calc_delta();
 		}
-		delta *= deriv_sigmoid(10, get_linear_output());
+		delta *= deriv_activation_function(get_linear_output());
 	}
 	return delta;
 }
@@ -106,7 +127,7 @@ void Node::calc_grad()
 
 	long double output = get_output();
 	for(auto it : output_weight_list) {
-		grad.push_back(output * it->getDst()->get_delta());
+		grad.push_back(output * it->get_dst()->get_delta());
 	}
 
 	/*for(auto it : input_weight_list) {
@@ -118,9 +139,9 @@ void Node::update_weight(long double learning_rate)
 {
 	for(int i=0; i<(int)output_weight_list.size(); i++) {
 		Weight* w = output_weight_list[i];
-		long double weight = w->getW();
+		long double weight = w->get_w();
 		weight = weight - learning_rate * grad[i];
-		w->setW(weight);
+		w->set_w(weight);
 	}
 	bias -= learning_rate * delta;
 }

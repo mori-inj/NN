@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <gdiplus.h>
 #include <time.h>
+#include "function.h"
 #include "fnn.h"
 //#include "resource.h"
 using namespace Gdiplus;
@@ -11,7 +12,8 @@ const int WIDTH = 800;
 const int HEIGHT = 600;
 
 int OUTPUT_CNT;
-Model model;
+//Model model;
+FNN model;
 int class0_data_size, class1_data_size;
 FILE *fp0, *fp1;
 vector<Data> input_data_list, output_data_list;
@@ -90,7 +92,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	PAINTSTRUCT ps;
 
 	HBITMAP hBit, OldBit;
+	HPEN hPen, oldPen;
 	RECT crt;
+
+
+	static long double precision;
 
 
 	switch (iMsg)
@@ -98,18 +104,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	case WM_CREATE:
 		if(1) {
 		//build model
-		int l1 = 4, l2 = 5;
+		int l[5] = {200, 200, 100, 2, 2};
 		srand((unsigned)time(NULL));
-		model.add_new_input_node();
+		
+		/*model.add_new_input_node();
 		model.add_new_input_node();
 		model.add_new_output_node();
 
-		/*for(int i=0; i<l1; i++) {
-			model.add_new_node();
-			model.add_weight(0, i+3);
-			model.add_weight(1, i+3);
-			model.add_weight(i+3, 2);
-		}*/
+		//for(int i=0; i<l1; i++) {
+		//	model.add_new_node();
+		//	model.add_weight(0, i+3);
+		//	model.add_weight(1, i+3);
+		//	model.add_weight(i+3, 2);
+		//}
 
 		for(int i=0; i<l1; i++) {
 			model.add_new_node();
@@ -122,7 +129,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				model.add_weight(j+3, i+3+l1);
 			}		
 			model.add_weight(i+3+l1, 2);
+		}*/
+
+		model.add_input_layer(2);
+		model.add_output_layer(1);
+		for(int i=0; i<3; i++) {
+			model.add_layer(l[i], 
+				//[](LD x) -> LD{return sigmoid(x);},
+				//[](LD x) -> LD{return deriv_sigmoid(x);}
+				[](LD x) -> LD{return ReLU(x);},
+				[](LD x) -> LD{return deriv_ReLU(x);}
+				//[](LD x) -> LD{return exponential_converge(x);},
+				//[](LD x) -> LD{return deriv_exponential_converge(x);}
+			);
 		}
+		model.add_all_weights();
 
 
 		model.print();
@@ -214,10 +235,30 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		break;
 
 	case WM_TIMER:
-		InvalidateRect(hWnd, NULL, FALSE);
+		printf("train: %Lf (%Lf%%), test: %Lf (%Lf%%)\n",
+			model.get_error(input_data_list, output_data_list), 
+			precision = model.get_precision(input_data_list, output_data_list)*100, 
+			model.get_error(input_test_data_list, output_test_data_list),
+			model.get_precision(input_test_data_list, output_test_data_list)*100);
+		fflush(stdout);
+		if(precision <= 90) {
+			model.train(0.01, 1, input_data_list, output_data_list);
+		} else if(precision <= 95) {
+			model.train(0.001, 1, input_data_list, output_data_list);
+		} else {
+			model.train(0.0001, 1, input_data_list, output_data_list);
+		}
+
+		if(precision >= 99) {
+			model.print_weights();
+			exit(0);
+		} else {
+			InvalidateRect(hWnd, NULL, FALSE);
+		}
 		break;
 
 	case WM_PAINT:
+	{
 		hdc = BeginPaint(hWnd, &ps);
 		GetClientRect(hWnd, &crt);
 
@@ -226,13 +267,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		OldBit = (HBITMAP)SelectObject(MemDC, hBit);
 		//hBrush = CreateSolidBrush(RGB(255, 255, 255));
 		//oldBrush = (HBRUSH)SelectObject(MemDC, hBrush);
-		//hPen = CreatePen(PS_SOLID, 5, RGB(255, 255, 255));
-		//oldPen = (HPEN)SelectObject(MemDC, hPen);
+		hPen = CreatePen(PS_SOLID, 5, RGB(255, 255, 255));
+		oldPen = (HPEN)SelectObject(MemDC, hPen);
 
 		//FillRect(MemDC, &crt, hBrush);
 		SetBkColor(MemDC, RGB(255, 255, 255));
 
-		RECT temp;
+		/*RECT temp;
 		GetWindowRect(hWnd, &temp);
 		SendMessage(plotWindowHwnd, WM_CLOSE, NULL, NULL);
 				plotWindowHwnd = CreateWindow(
@@ -248,7 +289,66 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 							g_hInst,
 							NULL
 							);
-		ShowWindow(plotWindowHwnd, SW_SHOW);
+		ShowWindow(plotWindowHwnd, SW_SHOW);*/
+
+
+		const int TOP = 100, BOTTOM = 500, LEFT = 200, RIGHT = 600;
+		//draw axis
+		hPen = CreatePen(PS_SOLID, 2, RGB(255,255,255));
+		oldPen = (HPEN)SelectObject(MemDC, hPen);
+		MoveToEx(MemDC, LEFT, (TOP+BOTTOM)/2, NULL); 
+		LineTo(MemDC, RIGHT, (TOP+BOTTOM)/2);
+		MoveToEx(MemDC, (LEFT+RIGHT)/2, TOP, NULL); 
+		LineTo(MemDC, (LEFT+RIGHT)/2, BOTTOM);
+		SelectObject(MemDC, oldPen);
+		DeleteObject(hPen);
+
+		//draw data
+		int SIZE = (int)input_data_list.size();
+		for(int i=0; i<SIZE/10; i++) {
+			long double x0 = input_data_list[i][0];
+			long double x1 = input_data_list[i][1];
+			long double y = output_data_list[i][0];
+			long double h = model.get_output(input_data_list[i])[0];
+
+			int red, green, blue;
+			if(y >= 0.5) {
+				red = 255;
+				green = 0;
+				blue = 255;
+			} else {
+				red = 0;
+				green = 255;
+				blue = 255;
+			}
+
+			if(h>= 0.5) {
+					
+			} else {
+				red /= 2;
+				green /= 2;
+				blue /= 2;
+			}
+
+			x0 = x0 * (RIGHT-LEFT) + LEFT;
+			x1 = -x1 * (BOTTOM-TOP) + BOTTOM;
+			long double r = 2;
+			//Ellipse(MemDC, x0-r, x1-r, x0+r, x1+r);
+			hPen = CreatePen(PS_SOLID, 1, RGB(red,green,blue));
+			oldPen = (HPEN)SelectObject(MemDC, hPen);
+
+			MoveToEx(MemDC, (int)(x0-r), (int)(x1-r), NULL); 
+			LineTo(MemDC, (int)(x0+r), (int)(x1-r));
+			LineTo(MemDC, (int)(x0+r), (int)(x1+r));
+			LineTo(MemDC, (int)(x0-r), (int)(x1+r));
+			LineTo(MemDC, (int)(x0-r), (int)(x1-r));
+
+				
+			SelectObject(MemDC, oldPen);
+			DeleteObject(hPen);
+		}
+
+
 
 
 		BitBlt(hdc, 0, 0, crt.right, crt.bottom, MemDC, 0, 0, SRCCOPY);
@@ -260,7 +360,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		//DeleteObject(hBrush);
 		DeleteObject(hBit);
 		EndPaint(hWnd, &ps);
+
+		PostMessage(hWnd, WM_TIMER, NULL, NULL);
 		break;
+	}
 
 	case WM_DESTROY:
 		PostQuitMessage(0);
@@ -280,6 +383,7 @@ LRESULT CALLBACK WndProcPlot(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	HPEN hPen, oldPen;
 
 	static long double zoom = 10;
+	static long double precision;
 
 	switch(iMsg)
 	{
@@ -292,11 +396,17 @@ LRESULT CALLBACK WndProcPlot(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		case WM_TIMER:
 		{
 			printf("train: %Lf (%Lf%%), test: %Lf (%Lf%%)\n",
-			model.get_error(input_data_list, output_data_list), 
-			model.get_precision(input_data_list, output_data_list)*100, 
-			model.get_error(input_test_data_list, output_test_data_list),
-			model.get_precision(input_test_data_list, output_test_data_list)*100);
-			model.train(0.001, 10, input_data_list, output_data_list);
+				model.get_error(input_data_list, output_data_list), 
+				precision = model.get_precision(input_data_list, output_data_list)*100, 
+				model.get_error(input_test_data_list, output_test_data_list),
+				model.get_precision(input_test_data_list, output_test_data_list)*100);
+			if(precision <= 90) {
+				model.train(0.01, 10, input_data_list, output_data_list);
+			} else if(precision <= 95) {
+				model.train(0.001, 10, input_data_list, output_data_list);
+			} else {
+				model.train(0.0001, 10, input_data_list, output_data_list);
+			}
 
 			InvalidateRect(hWnd, NULL, FALSE);
 			break;
@@ -361,11 +471,11 @@ LRESULT CALLBACK WndProcPlot(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				hPen = CreatePen(PS_SOLID, 1, RGB(red,green,blue));
 				oldPen = (HPEN)SelectObject(MemDC, hPen);
 
-				MoveToEx(MemDC, x0-r, x1-r, NULL); 
-				LineTo(MemDC, x0+r,x1-r);
-				LineTo(MemDC, x0+r, x1+r);
-				LineTo(MemDC, x0-r, x1+r);
-				LineTo(MemDC, x0-r, x1-r);
+				MoveToEx(MemDC, (int)(x0-r), (int)(x1-r), NULL); 
+				LineTo(MemDC, (int)(x0+r), (int)(x1-r));
+				LineTo(MemDC, (int)(x0+r), (int)(x1+r));
+				LineTo(MemDC, (int)(x0-r), (int)(x1+r));
+				LineTo(MemDC, (int)(x0-r), (int)(x1-r));
 
 				
 				SelectObject(MemDC, oldPen);

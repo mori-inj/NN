@@ -30,6 +30,9 @@
     <ClCompile Include="NN.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="fnn.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="function.h">

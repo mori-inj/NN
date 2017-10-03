@@ -3,9 +3,9 @@
 
 Weight::Weight(Weight& weight)
 {
-	this->w =  weight.getW();
-	this->src = weight.getSrc();
-	this->dst = weight.getDst();
+	this->w =  weight.get_w();
+	this->src = weight.get_src();
+	this->dst = weight.get_dst();
 }
 
 Weight::Weight(Node* src)
@@ -27,27 +27,27 @@ Weight::Weight(Node* src, Node* dst)
 	this->dst = dst;
 }
 
-Node* Weight::getSrc()
+Node* Weight::get_src()
 {
 	return src;
 }
 
-Node* Weight::getDst()
+Node* Weight::get_dst()
 {
 	return dst;
 }
 
-long double Weight::getW()
+long double Weight::get_w()
 {
 	return w;
 }
 
-void Weight::setDst(Node& dst)
+void Weight::set_dst(Node& dst)
 {
 	this->dst = &dst;
 }
 
-void Weight::setW(long double w)
+void Weight::set_w(long double w)
 {
 	this->w = w;
 }
