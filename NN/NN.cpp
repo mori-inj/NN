@@ -102,12 +102,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	case WM_CREATE:
 		if(1) {
 		//build model
-		int l[5] = {2};//{600, 300, 100, 25, 5};
+			int l[5] = {400, 200, 100, 50, 25};
 		srand((unsigned)time(NULL));
 
 		model.add_input_layer(28*28);
 		model.add_output_layer(10);
-		for(int i=0; i<1; i++) {
+		for(int i=0; i<5; i++) {
 			model.add_layer(l[i], 
 				[](LD x) -> LD{return PReLU(x);},
 				[](LD x) -> LD{return deriv_PReLU(x);}
@@ -121,8 +121,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		model.read_bias_and_weights("C:/AI/NN/mnist/weight.txt");
 #endif
 
-		model.print();
-
+		//model.print();
+		printf("model initialize done\n"); fflush(stdout);
 
 
 		//read data
@@ -141,7 +141,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			fread(&temp, 1, 1, fp1);
 		}
 		
-		for(int i=0; i<600; i++) {
+		for(int i=0; i<60000; i++) {
 			vector<LD> input_data;
 			vector<LD> output_data;
 			for(int j=0; j<28*28; j++) {
@@ -177,6 +177,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 		fclose(fp0);
 		fclose(fp1);
+		printf("read train done\n"); fflush(stdout);
 
 
 		//read test data
@@ -194,7 +195,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			fread(&temp, 1, 1, fp1);
 		}
 		
-		for(int i=0; i<100; i++) {
+		for(int i=0; i<10000; i++) {
 			vector<LD> input_data;
 			vector<LD> output_data;
 			for(int j=0; j<28*28; j++) {
@@ -230,6 +231,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 		fclose(fp0);
 		fclose(fp1);
+		printf("read test done\n"); fflush(stdout);
 
 
 #ifdef GDX_MODE
@@ -249,6 +251,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	{
 #ifndef GDX_MODE
 		//for training NN
+		printf("input size: %d output size: %d\n",(int)input_data_list.size(), (int)output_data_list.size());
 		printf("train: %Lf (%Lf%%), test: %Lf (%Lf%%)\n",
 			model.get_error(input_data_list, output_data_list), 
 			precision = model.get_precision(input_data_list, output_data_list)*100, 
@@ -256,16 +259,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			model.get_precision(input_test_data_list, output_test_data_list)*100);
 		fflush(stdout);
 		if(precision <= 90) {
-			model.train(0.01, input_data_list, output_data_list);
-		} else if(precision <= 95) {
-			model.train(0.001, input_data_list, output_data_list);
-		} else {
 			model.train(0.0001, input_data_list, output_data_list);
+		} else if(precision <= 95) {
+			model.train(0.00001, input_data_list, output_data_list);
+		} else {
+			model.train(0.000001, input_data_list, output_data_list);
 		}
 
-		if(precision >= 99.9) {
-			//model.print_bias_and_weights();
-			//exit(0);
+		if(precision >= 92) {
+			model.print_bias_and_weights();
+			exit(0);
 		} else {
 			InvalidateRect(hWnd, NULL, FALSE);
 		}
@@ -306,8 +309,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		//draw data
 		int px=20, py=20;
 		for(int idx=0; idx<20; idx++) {
-			for(int i=0; i<10; i++) printf("%.0Lf ", output_data_list[idx][i]);
-			printf("\n");fflush(stdout);
 			for(int i=0; i<28; i++) {
 				for(int j=0; j<28; j++) {
 					LD clr = input_data_list[idx][i*28+j];

@@ -264,9 +264,10 @@ void Model::train(long double learning_rate, vector<Data>& input_data_list, vect
 	assert(input_data_list.size() == output_data_list.size());
 
 	const int OUTPUT_DATA_LIST_SIZE = (int)output_data_list.size();
-	const int BATCH_SIZE = 10; //batch size의 역수
-	for(int i=rand()%BATCH_SIZE; i<OUTPUT_DATA_LIST_SIZE; i+=BATCH_SIZE) {
-		//printf("\t%d/%d\n", i, OUTPUT_DATA_LIST_SIZE); fflush(stdout);
+	const int BATCH_SIZE = 100; //batch size의 역수
+	const int ITER = OUTPUT_DATA_LIST_SIZE/BATCH_SIZE;
+	for(int i=rand()%ITER; i<OUTPUT_DATA_LIST_SIZE; i+=ITER) {
+		printf("\t%d/%d\n", i, OUTPUT_DATA_LIST_SIZE); fflush(stdout);
 		train(learning_rate, input_data_list[i], output_data_list[i]);
 	}
 }
@@ -345,10 +346,12 @@ long double Model::get_error(vector<Data>& input_data_list, vector<Data>& output
 {
 	assert(input_data_list.size() == output_data_list.size());
 	long double error_sum = 0;
-	int OUTPUT_SIZE = (int)output_data_list.size();
+	const int OUTPUT_SIZE = (int)output_data_list.size();
 	
 	for(int i=0; i<OUTPUT_SIZE; i++) {
 		error_sum += get_error(input_data_list[i], output_data_list[i]);
+		if(i%500==0)
+			printf("get_error %d / %d\n",i,OUTPUT_SIZE); fflush(stdout);
 	}
 	return error_sum / OUTPUT_SIZE;
 }
@@ -365,7 +368,7 @@ long double Model::get_precision(Data& input_data, Data& output_data)
 		else
 			precision += 1-output[i];
 	}
-	return precision;
+	return precision/SIZE;
 }
 
 long double Model::get_precision(vector<Data>& input_data_list, vector<Data>& output_data_list)
@@ -413,9 +416,11 @@ void Model::print()
 
 void Model::print_bias_and_weights()
 {
+	FILE* fp = fopen("mnist_weight.txt","w");
 	const int NODE_NUM = (int)node_list.size();
 	for(int i=0; i<NODE_NUM; i++) {
 		printf("%d:%Lf\n",i,node_list[i]->get_bias());
+		fprintf(fp, "%d:%Lf\n",i,node_list[i]->get_bias());
 	}
 	for(int i=0; i<NODE_NUM; i++) {
 		const int OUTPUT_WEIGHT_NUM = (int)node_list[i]->output_weight_list.size();
@@ -426,8 +431,14 @@ void Model::print_bias_and_weights()
 				node_list[i]->output_weight_list[j]->get_w()
 				);
 			fflush(stdout);
+			fprintf(fp,"%d->%d:%Lf\n", 
+				i, 
+				node_list[i]->output_weight_list[j]->get_dst()->get_idx(), 
+				node_list[i]->output_weight_list[j]->get_w()
+				);
 		}
 	}
+	fclose(fp);
 }
 
 void Model::read_bias_and_weights(char* filename)
