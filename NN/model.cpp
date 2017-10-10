@@ -2,6 +2,7 @@
 #include "weight.h"
 #include "function.h"
 #include <assert.h>
+#include <thread>
 
 #pragma warning(disable:4996)
 
@@ -243,11 +244,16 @@ void Model::train(long double learning_rate, Data& input_data, Data& output_data
 		node -> is_linear_output_cached = false;
 	}
 
+
+	for(auto node : node_list) {
+		node -> is_delta_cached = false;
+	}
 	//delta, grad 계산
 	//input node자체는 delta구할 필요 없지만 재귀적으로 구하기 위해 input부터 시작
 	for(auto node : input_node_list) {
 		node -> calc_delta();
 	}
+
 	//output node는 grad필요 없음
 	for(auto node : node_list) {
 		node -> calc_grad();
@@ -264,10 +270,9 @@ void Model::train(long double learning_rate, vector<Data>& input_data_list, vect
 	assert(input_data_list.size() == output_data_list.size());
 
 	const int OUTPUT_DATA_LIST_SIZE = (int)output_data_list.size();
-	const int BATCH_SIZE = 100; //batch size의 역수
+	const int BATCH_SIZE = 100;
 	const int ITER = OUTPUT_DATA_LIST_SIZE/BATCH_SIZE;
 	for(int i=rand()%ITER; i<OUTPUT_DATA_LIST_SIZE; i+=ITER) {
-		printf("\t%d/%d\n", i, OUTPUT_DATA_LIST_SIZE); fflush(stdout);
 		train(learning_rate, input_data_list[i], output_data_list[i]);
 	}
 }
@@ -278,8 +283,8 @@ Data Model::get_linear_output(Data& input_data)
 	const int INPUT_DATA_SIZE = (int)input_data.size();
 	
 	for(auto node : node_list) {
-			node -> is_output_cached = false;
-			node -> is_linear_output_cached = false;
+		node -> is_output_cached = false;
+		node -> is_linear_output_cached = false;
 	}
 
 	for(int i=0; i<INPUT_DATA_SIZE; i++) {
@@ -299,8 +304,8 @@ Data Model::get_output(Data& input_data)
 	const int INPUT_DATA_SIZE = (int)input_data.size();
 	
 	for(auto node : node_list) {
-			node -> is_output_cached = false;
-			node -> is_linear_output_cached = false;
+		node -> is_output_cached = false;
+		node -> is_linear_output_cached = false;
 	}
 
 	for(int i=0; i<INPUT_DATA_SIZE; i++) {
@@ -347,11 +352,58 @@ long double Model::get_error(vector<Data>& input_data_list, vector<Data>& output
 	assert(input_data_list.size() == output_data_list.size());
 	long double error_sum = 0;
 	const int OUTPUT_SIZE = (int)output_data_list.size();
+	const int SKIP = 100;
+	int cnt = 0;
 	
-	for(int i=0; i<OUTPUT_SIZE; i++) {
+	for(int i=rand()%SKIP; i<OUTPUT_SIZE; i+=SKIP) {
 		error_sum += get_error(input_data_list[i], output_data_list[i]);
-		if(i%500==0)
-			printf("get_error %d / %d\n",i,OUTPUT_SIZE); fflush(stdout);
+		cnt++;
+	}
+	return error_sum / cnt;//OUTPUT_SIZE;
+}
+
+void Model::get_error_per_thread(vector<Data>& input_data_list, vector<Data>& output_data_list, pair<int, int> range, LD* error_sum)
+{
+	assert(input_data_list.size() == output_data_list.size());
+	long double error = 0;
+	const int OUTPUT_SIZE = (int)output_data_list.size();
+
+	int start = range.first;
+	int end = range.second;
+
+	for(int i=start; i<end; i++) {
+		error += get_error(input_data_list[i], output_data_list[i]);
+	}
+
+	get_error_lock.lock();
+	*error_sum += error;
+	get_error_lock.unlock();
+}
+
+long double Model::get_error_prll(vector<Data>& input_data_list, vector<Data>& output_data_list, int NUM_THREAD)
+{
+	assert(input_data_list.size() == output_data_list.size());
+	long double error_sum = 0;
+	const int OUTPUT_SIZE = (int)output_data_list.size();
+	const LD DATA_PER_THREAD = OUTPUT_SIZE / NUM_THREAD;
+
+	vector<thread> threads;
+	
+	for(int i=0; i<NUM_THREAD; i++) {
+		if(i%10==0)
+			printf("get_error init %d\n",i); fflush(stdout);
+		threads.push_back(thread(&Model::get_error_per_thread, this, 
+								input_data_list, 
+								output_data_list, 
+								make_pair((int)(i*DATA_PER_THREAD), (int)((i+1)*DATA_PER_THREAD)), 
+								&error_sum)
+							);
+	}
+
+	for(int i=0; i<NUM_THREAD; i++) {
+		if(i%10==0)
+			printf("get_error end %d\n",i); fflush(stdout);
+		threads[i].join();
 	}
 	return error_sum / OUTPUT_SIZE;
 }
@@ -375,10 +427,73 @@ long double Model::get_precision(vector<Data>& input_data_list, vector<Data>& ou
 {
 	assert(input_data_list.size() == output_data_list.size());
 	long double precision = 0;
-	int OUTPUT_SIZE = (int)output_data_list.size();
+	const int OUTPUT_SIZE = (int)output_data_list.size();
+	const int SKIP = 100;
+	int cnt = 0;
+
+	for(int i=rand()%SKIP; i<OUTPUT_SIZE; i+=SKIP) {
+		precision += get_precision(input_data_list[i], output_data_list[i]);
+		cnt++;
+	}
+	return precision / cnt;//OUTPUT_SIZE;
+}
+
+long double Model::get_precision_all(vector<Data>& input_data_list, vector<Data>& output_data_list)
+{
+	assert(input_data_list.size() == output_data_list.size());
+	long double precision = 0;
+	const int OUTPUT_SIZE = (int)output_data_list.size();
+	int cnt = 0;
 
 	for(int i=0; i<OUTPUT_SIZE; i++) {
 		precision += get_precision(input_data_list[i], output_data_list[i]);
+		cnt++;
+	}
+	return precision / cnt;//OUTPUT_SIZE;
+}
+
+void Model::get_precision_per_thread(vector<Data>& input_data_list, vector<Data>& output_data_list, pair<int, int> range, LD* precision_sum)
+{
+	assert(input_data_list.size() == output_data_list.size());
+	long double precision = 0;
+	const int OUTPUT_SIZE = (int)output_data_list.size();
+
+	int start = range.first;
+	int end = range.second;
+
+	for(int i=start; i<end; i++) {
+		precision += get_precision(input_data_list[i], output_data_list[i]);
+	}
+
+	get_precision_lock.lock();
+	*precision_sum += precision;
+	get_precision_lock.unlock();
+}
+
+long double Model::get_precision_prll(vector<Data>& input_data_list, vector<Data>& output_data_list, int NUM_THREAD)
+{
+	assert(input_data_list.size() == output_data_list.size());
+	long double precision = 0;
+	int OUTPUT_SIZE = (int)output_data_list.size();
+	const LD DATA_PER_THREAD = OUTPUT_SIZE / NUM_THREAD;
+
+	vector<thread> threads;
+	
+	for(int i=0; i<NUM_THREAD; i++) {
+		if(i%10==0)
+			printf("get_precision init %d\n",i); fflush(stdout);
+		threads.push_back(thread(&Model::get_precision_per_thread, this, 
+								input_data_list, 
+								output_data_list, 
+								make_pair((int)(i*DATA_PER_THREAD), (int)((i+1)*DATA_PER_THREAD)), 
+								&precision)
+							);
+	}
+
+	for(int i=0; i<NUM_THREAD; i++) {
+		if(i%10==0)
+			printf("get_precision end %d %Lf\n",i, precision); fflush(stdout);
+		threads[i].join();
 	}
 	return precision / OUTPUT_SIZE;
 }
@@ -418,19 +533,21 @@ void Model::print_bias_and_weights()
 {
 	FILE* fp = fopen("mnist_weight.txt","w");
 	const int NODE_NUM = (int)node_list.size();
+	//printf("%d %d",NODE_NUM, (int)weight_set.size());
+	fprintf(fp, "%d %d\n",NODE_NUM, (int)weight_set.size());
 	for(int i=0; i<NODE_NUM; i++) {
-		printf("%d:%Lf\n",i,node_list[i]->get_bias());
+		//printf("%d:%Lf\n",i,node_list[i]->get_bias());
 		fprintf(fp, "%d:%Lf\n",i,node_list[i]->get_bias());
 	}
 	for(int i=0; i<NODE_NUM; i++) {
 		const int OUTPUT_WEIGHT_NUM = (int)node_list[i]->output_weight_list.size();
 		for(int j=0; j<OUTPUT_WEIGHT_NUM; j++) {
-			printf("%d->%d:%Lf\n", 
+			/*printf("%d->%d:%Lf\n", 
 				i, 
 				node_list[i]->output_weight_list[j]->get_dst()->get_idx(), 
 				node_list[i]->output_weight_list[j]->get_w()
 				);
-			fflush(stdout);
+			fflush(stdout);*/
 			fprintf(fp,"%d->%d:%Lf\n", 
 				i, 
 				node_list[i]->output_weight_list[j]->get_dst()->get_idx(), 

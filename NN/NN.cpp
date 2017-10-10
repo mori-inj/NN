@@ -1,3 +1,4 @@
+#include <Windowsx.h>
 #include <windows.h>
 #include <gdiplus.h>
 #include <time.h>
@@ -93,7 +94,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	HPEN hPen, oldPen;
 	RECT crt;
 
-
+	static bool is_clicked = false;
+	static int xpos, ypos;
+	static vector<pair<pair<int, int>,bool> > dots;
 	static long double precision;
 
 
@@ -102,19 +105,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	case WM_CREATE:
 		if(1) {
 		//build model
-			int l[5] = {400, 200, 100, 50, 25};
+		int l[5] = {256, 256};//{600, 300, 150, 75, 37};
 		srand((unsigned)time(NULL));
 
 		model.add_input_layer(28*28);
 		model.add_output_layer(10);
-		for(int i=0; i<5; i++) {
+		for(int i=0; i<2; i++) {
 			model.add_layer(l[i], 
 				[](LD x) -> LD{return PReLU(x);},
 				[](LD x) -> LD{return deriv_PReLU(x);}
 			);
 		}
 #ifndef GDX_MODE
-		model.add_all_weights();
+		//model.add_all_weights();
+		model.read_bias_and_weights("C:/AI/NN/mnist_weight_99.txt");
 #endif
 		
 #ifdef GDX_MODE
@@ -141,7 +145,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			fread(&temp, 1, 1, fp1);
 		}
 		
-		for(int i=0; i<60000; i++) {
+		for(int i=0; i<600; i++) {
 			vector<LD> input_data;
 			vector<LD> output_data;
 			for(int j=0; j<28*28; j++) {
@@ -195,7 +199,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			fread(&temp, 1, 1, fp1);
 		}
 		
-		for(int i=0; i<10000; i++) {
+		for(int i=0; i<100; i++) {
 			vector<LD> input_data;
 			vector<LD> output_data;
 			for(int j=0; j<28*28; j++) {
@@ -251,24 +255,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	{
 #ifndef GDX_MODE
 		//for training NN
-		printf("input size: %d output size: %d\n",(int)input_data_list.size(), (int)output_data_list.size());
 		printf("train: %Lf (%Lf%%), test: %Lf (%Lf%%)\n",
-			model.get_error(input_data_list, output_data_list), 
-			precision = model.get_precision(input_data_list, output_data_list)*100, 
-			model.get_error(input_test_data_list, output_test_data_list),
-			model.get_precision(input_test_data_list, output_test_data_list)*100);
+			model.get_error(input_data_list, output_data_list), //model.get_error_prll(input_data_list, output_data_list, 100), 
+			precision = model.get_precision(input_data_list, output_data_list)*100, //model.get_precision_prll(input_data_list, output_data_list,100)*100, 
+			model.get_error(input_test_data_list, output_test_data_list), //model.get_error_prll(input_test_data_list, output_test_data_list, 100),
+			model.get_precision(input_test_data_list, output_test_data_list)*100); //model.get_precision_prll(input_test_data_list, output_test_data_list,100)*100);
 		fflush(stdout);
-		if(precision <= 90) {
-			model.train(0.0001, input_data_list, output_data_list);
-		} else if(precision <= 95) {
-			model.train(0.00001, input_data_list, output_data_list);
+		if(precision <= 80) {
+			for(int i=0; i<10; i++) model.train(0.001, input_data_list, output_data_list);
+		} else if(precision <= 85) {
+			for(int i=0; i<20; i++) model.train(0.0001, input_data_list, output_data_list);
 		} else {
-			model.train(0.000001, input_data_list, output_data_list);
+			for(int i=0; i<40; i++) model.train(0.00001, input_data_list, output_data_list);
 		}
 
-		if(precision >= 92) {
-			model.print_bias_and_weights();
-			exit(0);
+		if(precision >= 99.2) {
+			if(model.get_precision_all(input_data_list, output_data_list)*100 >= 99) {
+				model.print_bias_and_weights();
+				exit(0);
+			} else {
+				InvalidateRect(hWnd, NULL, FALSE);
+			}
 		} else {
 			InvalidateRect(hWnd, NULL, FALSE);
 		}
@@ -306,6 +313,75 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 		const int TOP = 100, BOTTOM = 500, LEFT = 200, RIGHT = 600;
 
+		//draw drawable area
+		hPen = CreatePen(PS_SOLID, 2, RGB(255,255,255));
+		oldPen = (HPEN)SelectObject(MemDC, hPen);
+		const int drawable_size = 30;
+		MoveToEx(MemDC, (LEFT+RIGHT)/2 - drawable_size, (TOP+BOTTOM)/2 - drawable_size, NULL); 
+		LineTo(MemDC, (LEFT+RIGHT)/2 + drawable_size, (TOP+BOTTOM)/2 - drawable_size);
+		LineTo(MemDC, (LEFT+RIGHT)/2 + drawable_size, (TOP+BOTTOM)/2 + drawable_size);
+		LineTo(MemDC, (LEFT+RIGHT)/2 - drawable_size, (TOP+BOTTOM)/2 + drawable_size);
+		LineTo(MemDC, (LEFT+RIGHT)/2 - drawable_size, (TOP+BOTTOM)/2 - drawable_size);
+		SelectObject(MemDC, oldPen);
+		DeleteObject(hPen);
+
+		hPen = CreatePen(PS_SOLID, 4, RGB(255,255,255));
+		oldPen = (HPEN)SelectObject(MemDC, hPen);
+		const int DOTS_SIZE = (int)dots.size();
+		for(int i=0; i<DOTS_SIZE-1; i++) {
+			MoveToEx(MemDC, dots[i].first.first, dots[i].first.second, NULL); 
+			if(dots[i].second)
+				LineTo(MemDC, dots[i+1].first.first, dots[i+1].first.second);
+		}		
+
+		Data user_input;
+		for(int i=0; i<28; i++) {
+			for(int j=0; j<28; j++) {
+				LD x = j*(drawable_size*2-1)/28 + (LEFT+RIGHT)/2 - drawable_size+1;
+				LD y = i*(drawable_size*2-1)/28 + (TOP+BOTTOM)/2 - drawable_size+1;
+				COLORREF clr[4];
+				clr[0] = GetPixel(MemDC, (int)x, (int)y);
+				clr[1] = GetPixel(MemDC, (int)x, (int)y+1);
+				clr[2] = GetPixel(MemDC, (int)x+1, (int)y);
+				clr[3] = GetPixel(MemDC, (int)x+1, (int)y+1);
+
+				int rd=0, gr=0, bl=0;
+				for(int k=0; k<4; k++) {
+					rd += GetRValue(clr[k]);
+					gr += GetGValue(clr[k]);
+					bl += GetBValue(clr[k]);
+				}
+
+				LD sum = (rd+gr+bl)/12;
+
+				if(sum > 0.8) {
+					//printf("1");
+					user_input.push_back(255);
+				} else {
+					//printf("0");
+					user_input.push_back(0);
+				}
+			}
+			//printf("\n");
+		}
+		Data predicted = model.get_output(user_input);
+
+		int predicted_class = -1;
+		LD predicted_value = 0;
+		for(int i=0; i<10; i++) {
+			printf("%d: %Lf\n", i, predicted[i]);
+			if(predicted_value < predicted[i]) {
+				predicted_value = predicted[i];
+				predicted_class = i;
+			}
+		}
+		printf("====\n");
+		printf("result: %d\n\n", predicted_class);
+		fflush(stdout);
+
+		SelectObject(MemDC, oldPen);
+		DeleteObject(hPen);
+
 		//draw data
 		int px=20, py=20;
 		for(int idx=0; idx<20; idx++) {
@@ -336,7 +412,75 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		DeleteObject(hBit);
 		EndPaint(hWnd, &ps);
 
-		PostMessage(hWnd, WM_TIMER, NULL, NULL);
+		//PostMessage(hWnd, WM_TIMER, NULL, NULL);
+		break;
+	}
+
+	case WM_LBUTTONDOWN:
+	{
+		int tmp_xpos = GET_X_LPARAM(lParam);
+		int tmp_ypos = GET_Y_LPARAM(lParam);
+
+		is_clicked = true;
+
+		const int TOP = 100, BOTTOM = 500, LEFT = 200, RIGHT = 600;
+		const int drawable_size = 30;
+		const int mx = (LEFT+RIGHT)/2 - drawable_size, Mx = (LEFT+RIGHT)/2 + drawable_size;
+		const int my = (TOP+BOTTOM)/2 - drawable_size, My = (TOP+BOTTOM)/2 + drawable_size;
+
+		if((mx < tmp_xpos && tmp_xpos < Mx) && (my < tmp_ypos && tmp_ypos < My)) {
+			xpos = tmp_xpos;
+			ypos = tmp_ypos;
+			dots.push_back(make_pair(make_pair(xpos, ypos),true));
+		} else {
+			dots.clear();
+		}
+		InvalidateRect(hWnd, NULL, FALSE);
+		break;
+	}
+
+	case WM_MOUSEMOVE:
+	{
+		int tmp_xpos = GET_X_LPARAM(lParam);
+		int tmp_ypos = GET_Y_LPARAM(lParam);
+
+		if(!is_clicked)
+			break;
+
+		const int TOP = 100, BOTTOM = 500, LEFT = 200, RIGHT = 600;
+		const int drawable_size = 30;
+		const int mx = (LEFT+RIGHT)/2 - drawable_size, Mx = (LEFT+RIGHT)/2 + drawable_size;
+		const int my = (TOP+BOTTOM)/2 - drawable_size, My = (TOP+BOTTOM)/2 + drawable_size;
+
+		if((mx < tmp_xpos && tmp_xpos < Mx) && (my < tmp_ypos && tmp_ypos < My)) {
+			xpos = tmp_xpos;
+			ypos = tmp_ypos;
+			dots.push_back(make_pair(make_pair(xpos, ypos),true));
+		} else {
+			dots.clear();
+		}
+		InvalidateRect(hWnd, NULL, FALSE);
+		break;
+	}
+
+	case WM_LBUTTONUP:
+	{
+		int tmp_xpos = GET_X_LPARAM(lParam);
+		int tmp_ypos = GET_Y_LPARAM(lParam);
+		if(is_clicked) {
+			is_clicked = false;
+			const int TOP = 100, BOTTOM = 500, LEFT = 200, RIGHT = 600;
+			const int drawable_size = 30;
+			const int mx = (LEFT+RIGHT)/2 - drawable_size, Mx = (LEFT+RIGHT)/2 + drawable_size;
+			const int my = (TOP+BOTTOM)/2 - drawable_size, My = (TOP+BOTTOM)/2 + drawable_size;
+
+			if((mx < tmp_xpos && tmp_xpos < Mx) && (my < tmp_ypos && tmp_ypos < My)) {
+				xpos = tmp_xpos;
+				ypos = tmp_ypos;
+				dots.push_back(make_pair(make_pair(xpos, ypos),false));
+			} 
+		}
+		InvalidateRect(hWnd, NULL, FALSE);
 		break;
 	}
 

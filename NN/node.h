@@ -24,6 +24,7 @@ private:
 public:
 	bool is_output_cached;
 	bool is_linear_output_cached;
+	bool is_delta_cached;
 
 	bool is_input_node;
 	bool is_output_node;

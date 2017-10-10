@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <set>
+#include <mutex>
 #include "node.h"
 
 typedef vector<long double> Data; // change it to specific class if needed later
@@ -13,6 +14,8 @@ using namespace std;
 class Model
 {
 protected:
+	mutex get_error_lock, get_precision_lock;
+
 	vector<Node*> input_node_list;
 	vector<Node*> output_node_list;
 
@@ -51,8 +54,13 @@ public:
 	long double cross_entropy_multi(Data& y, Data& h);
 	long double get_error(Data& input_data, Data& output_data);
 	long double get_error(vector<Data>& input_data_list, vector<Data>& output_data_list);
+	void get_error_per_thread(vector<Data>& input_data_list, vector<Data>& output_data_list, pair<int, int> range, LD* error_sum);
+	long double get_error_prll(vector<Data>& input_data_list, vector<Data>& output_data_list, int NUM_THREAD);
 	long double get_precision(Data& input_data, Data& output_data);
 	long double get_precision(vector<Data>& input_data_list, vector<Data>& output_data_list);
+	long double get_precision_all(vector<Data>& input_data_list, vector<Data>& output_data_list);
+	void get_precision_per_thread(vector<Data>& input_data_list, vector<Data>& output_data_list, pair<int, int> range, LD* precision_sum);
+	long double get_precision_prll(vector<Data>& input_data_list, vector<Data>& output_data_list, int NUM_THREAD);
 	
 	int count_input_node();
 
