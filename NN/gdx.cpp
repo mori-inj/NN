@@ -4,8 +4,11 @@
 //#define PRINT_MODE
 
 //initialize random X
-void GDX::init_X(LD range_min, LD range_max)
+void GDX::init_X(LD range_min, LD range_max, int target_class)
 {
+	TARGET_CLASS = target_class;
+	MIN = range_min;
+	MAX = range_max;
 	const int INPUT_SIZE = (int)input_layer->size();
 	for(int i=0; i<INPUT_SIZE; i++) {
 		LD r = rand() / (LD) RAND_MAX;
@@ -120,31 +123,43 @@ void GDX::calc_grad_X(function<LD(LD)> deriv_act)
 		}
 	}
 
-//#ifdef PRINT_MODE
+#ifdef PRINT_MODE
 	printf("layer: output\n");
 	for(int i=0; i<LAYER_SIZE; i++) {
+		printf("%d: ", i);
 		for(int j=0; j<INPUT_SIZE; j++) {
 			printf("%.4Lf ", grad_X[i][j]);
 		}
 		printf("\n");
 	}
 	fflush(stdout);
-//#endif
+#endif
 
 }
 	
 //GD on X
 void GDX::update_grad_X(LD learning_rate)
 {
-	const int TARGET_CLASS = 0;
 	const int INPUT_SIZE = (int)input_layer->size();
 	for(int i=0; i<INPUT_SIZE; i++) {
 		target_X[i] = target_X[i] + learning_rate * grad_X[TARGET_CLASS][i];
+		if(target_X[i] < MIN)
+			target_X[i] = MIN;
+		else if(target_X[i] > MAX)
+			target_X[i] = MAX;
 	}
 }
 
 //get current X
-vector<LD>& GDX::get_X()
+vector<LD> GDX::get_X()
 {
 	return target_X;
+}
+
+void GDX::set_X(LD range_min, LD range_max, vector<LD> data, int target_class)
+{
+	TARGET_CLASS = target_class;
+	MIN = range_min;
+	MAX = range_max;
+	target_X = data;
 }
