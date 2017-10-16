@@ -118,13 +118,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		}
 #ifndef GDX_MODE
 		//model.add_all_weights();
-		model.read_bias_and_weights("C:/AI/NN/mnist_weight_99.txt");
+		model.read_bias_and_weights("C:/AI/NN/mnist_weight_975(new_precision).txt");
 #endif
 		
 #ifdef GDX_MODE
 		model.read_bias_and_weights("C:/AI/NN/mnist/weight.txt");
 #endif
-
+		/*
 		//model.print();
 		printf("model initialize done\n"); fflush(stdout);
 
@@ -235,7 +235,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		fclose(fp0);
 		fclose(fp1);
 		printf("read test done\n"); fflush(stdout);
-
+		*/
 
 #ifdef GDX_MODE
 		//gene part
@@ -314,7 +314,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 
 		//draw drawable area
-		/*
+		
 		hPen = CreatePen(PS_SOLID, 2, RGB(255,255,255));
 		oldPen = (HPEN)SelectObject(MemDC, hPen);
 		const int drawable_size = 30;
@@ -382,10 +382,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 		SelectObject(MemDC, oldPen);
 		DeleteObject(hPen);
-		*/
+		
 
 		//draw data
-		int px=20, py=20;
+		/*int px=20, py=20;
 		for(int idx=0; idx<20; idx++) {
 			for(int i=0; i<28; i++) {
 				for(int j=0; j<28; j++) {
@@ -399,7 +399,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				}
 			}
 			px += 28;
-		}
+		}*/
 
 #ifdef GDX_MODE
 		//draw X
@@ -414,11 +414,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		DeleteObject(hBit);
 		EndPaint(hWnd, &ps);
 
-		PostMessage(hWnd, WM_TIMER, NULL, NULL);
+		//PostMessage(hWnd, WM_TIMER, NULL, NULL);
 		break;
 	}
 
-	/*case WM_LBUTTONDOWN:
+	case WM_LBUTTONDOWN:
 	{
 		int tmp_xpos = GET_X_LPARAM(lParam);
 		int tmp_ypos = GET_Y_LPARAM(lParam);
@@ -484,7 +484,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		}
 		InvalidateRect(hWnd, NULL, FALSE);
 		break;
-	}*/
+	}
 
 	case WM_DESTROY:
 		model.print_bias_and_weights();
