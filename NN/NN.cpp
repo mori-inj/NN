@@ -128,7 +128,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		//model.print();
 		printf("model initialize done\n"); fflush(stdout);
 
-
 		//read data
 		int SIZE;
 		fp0 = fopen("C:/AI/NN/mnist/train-images-idx3-ubyte","r");
@@ -145,7 +144,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			fread(&temp, 1, 1, fp1);
 		}
 		
-		for(int i=0; i<600; i++) {
+		for(int i=0; i<60000; i++) {
 			vector<LD> input_data;
 			vector<LD> output_data;
 			for(int j=0; j<28*28; j++) {
@@ -199,7 +198,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			fread(&temp, 1, 1, fp1);
 		}
 		
-		for(int i=0; i<100; i++) {
+		for(int i=0; i<10000; i++) {
 			vector<LD> input_data;
 			vector<LD> output_data;
 			for(int j=0; j<28*28; j++) {
@@ -269,8 +268,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			for(int i=0; i<40; i++) model.train(0.00001, input_data_list, output_data_list);
 		}
 
-		if(precision >= 99.2) {
-			if(model.get_precision_all(input_data_list, output_data_list)*100 >= 99) {
+		if(precision >= 97.3) {
+			if(model.get_precision_all(input_data_list, output_data_list)*100 >= 97.5) {
 				model.print_bias_and_weights();
 				exit(0);
 			} else {
@@ -313,7 +312,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 		const int TOP = 100, BOTTOM = 500, LEFT = 200, RIGHT = 600;
 
+
 		//draw drawable area
+		/*
 		hPen = CreatePen(PS_SOLID, 2, RGB(255,255,255));
 		oldPen = (HPEN)SelectObject(MemDC, hPen);
 		const int drawable_size = 30;
@@ -381,6 +382,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 		SelectObject(MemDC, oldPen);
 		DeleteObject(hPen);
+		*/
 
 		//draw data
 		int px=20, py=20;
@@ -412,11 +414,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		DeleteObject(hBit);
 		EndPaint(hWnd, &ps);
 
-		//PostMessage(hWnd, WM_TIMER, NULL, NULL);
+		PostMessage(hWnd, WM_TIMER, NULL, NULL);
 		break;
 	}
 
-	case WM_LBUTTONDOWN:
+	/*case WM_LBUTTONDOWN:
 	{
 		int tmp_xpos = GET_X_LPARAM(lParam);
 		int tmp_ypos = GET_Y_LPARAM(lParam);
@@ -482,7 +484,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		}
 		InvalidateRect(hWnd, NULL, FALSE);
 		break;
-	}
+	}*/
 
 	case WM_DESTROY:
 		model.print_bias_and_weights();

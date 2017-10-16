@@ -270,7 +270,7 @@ void Model::train(long double learning_rate, vector<Data>& input_data_list, vect
 	assert(input_data_list.size() == output_data_list.size());
 
 	const int OUTPUT_DATA_LIST_SIZE = (int)output_data_list.size();
-	const int BATCH_SIZE = 100;
+	const int BATCH_SIZE = 600;
 	const int ITER = OUTPUT_DATA_LIST_SIZE/BATCH_SIZE;
 	for(int i=rand()%ITER; i<OUTPUT_DATA_LIST_SIZE; i+=ITER) {
 		train(learning_rate, input_data_list[i], output_data_list[i]);
@@ -414,13 +414,30 @@ long double Model::get_precision(Data& input_data, Data& output_data)
 	long double precision = 0;
 	Data output = get_output(input_data);
 
-	for(int i=0; i<SIZE; i++) {
+	/*for(int i=0; i<SIZE; i++) {
 		if(output_data[i] == 1)
 			precision += output[i];
 		else
 			precision += 1-output[i];
 	}
-	return precision/SIZE;
+	return precision/SIZE;*/
+
+	LD output_max = 0, target_output_max = 0;
+	int target_output_idx, output_idx;
+	for(int i=0; i<SIZE; i++) {
+		if(output_max < output_data[i]) {
+			output_max = output_data[i];
+			output_idx = i;
+		}
+		if(target_output_max < output[i]) {
+			target_output_max = output[i];
+			target_output_idx = i;
+		}
+	}
+	if(output_idx == target_output_idx)
+		return 1;
+	else
+		return 0;
 }
 
 long double Model::get_precision(vector<Data>& input_data_list, vector<Data>& output_data_list)
