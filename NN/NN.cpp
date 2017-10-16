@@ -124,7 +124,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 #endif
 		
 #ifdef GDX_MODE
-		model.read_bias_and_weights("C:/AI/NN/mnist_weight_99.txt");
+		model.read_bias_and_weights("C:/AI/NN/mnist_weight_975(new_precision).txt");
 		//model.read_bias_and_weights("C:/AI/NN/mnist_weight_gdx.txt");
 #endif
 
