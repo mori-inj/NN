@@ -23,9 +23,10 @@ void GDX::calc_grad_X(function<LD(LD)> deriv_act)
 {
 	vector<vector<LD> > temp_matrix;
 	const int INPUT_SIZE = (int)input_layer->size();
+	const int OUTPUT_SIZE = (int)output_layer->size();
 
 
-	//get analytical grad_X
+	//get analytical grad_X for specific class
 	/*vector<LD> analytic_grad_X;
 	const LD eps = 0.01;
 	for(int i = 0; i < INPUT_SIZE; i++) {
@@ -33,9 +34,9 @@ void GDX::calc_grad_X(function<LD(LD)> deriv_act)
 		vector<LD> temp_target_X_minus = target_X;
 		temp_target_X_plus[i] += eps;
 		temp_target_X_minus[i] -= eps;
-		LD delta = get_output(temp_target_X_plus)[0] - get_output(temp_target_X_minus)[0];
+		LD delta = get_output(temp_target_X_plus)[TARGET_CLASS] - get_output(temp_target_X_minus)[TARGET_CLASS];
 #ifdef PRINT_MODE
-		printf("plus: %Lf minus: %Lf\n",get_output(temp_target_X_plus)[0] , get_output(temp_target_X_minus)[0]);
+		printf("plus: %Lf minus: %Lf\n",get_output(temp_target_X_plus)[TARGET_CLASS], get_output(temp_target_X_minus)[TARGET_CLASS]);
 #endif
 		analytic_grad_X.push_back(delta/(2*eps));
 	}
@@ -46,8 +47,30 @@ void GDX::calc_grad_X(function<LD(LD)> deriv_act)
 	}
 	printf("\n");
 	fflush(stdout);
-#endif
-	*/
+#endif*/
+
+	//get analytical grad_X
+	/*vector<Data> analytic_grad_X;
+	const LD eps = 0.0001;
+	for(int i=0; i<OUTPUT_SIZE; i++) {
+		analytic_grad_X.push_back(Data());
+		for(int j=0; j<INPUT_SIZE; j++) {
+			vector<LD> temp_target_X_plus = target_X;
+			vector<LD> temp_target_X_minus = target_X;
+			temp_target_X_plus[j] += eps;
+			temp_target_X_minus[j] -= eps;
+			LD delta = get_output(temp_target_X_plus)[i] - get_output(temp_target_X_minus)[i];
+			analytic_grad_X[i].push_back(delta/(2*eps));
+		}
+	}
+
+	for(int i=0; i<OUTPUT_SIZE; i++) {
+		for(int j=0; j<INPUT_SIZE; j++) {
+			printf("%Lf ", analytic_grad_X[i][j]);
+		}
+		printf("\n");
+	}
+	grad_X = analytic_grad_X;*/
 
 	
 	get_output(target_X);
@@ -134,7 +157,7 @@ void GDX::calc_grad_X(function<LD(LD)> deriv_act)
 	}
 	fflush(stdout);
 #endif
-
+	
 }
 	
 //GD on X

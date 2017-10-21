@@ -261,6 +261,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		fclose(fp1);
 		printf("read test done\n"); fflush(stdout);
 		*/
+		
 
 		//read data
 		int SIZE;
@@ -373,7 +374,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 #ifdef GDX_MODE
 		//gene part
-		//model.init_X(0,255, 1);
+		model.init_X(0,255, 1);
 		
 		/*for(int i=0; (int)output_data_list.size(); i++) {
 			if(output_data_list[i][0]) {
@@ -384,8 +385,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		}*/
 
 
-		model.set_X(0,255,input_data_list[i], 1);
-		X_history.push_back(model.get_X());
+		//all 0 or all 1
+		/*Data input;
+		for(int i=0; i<28*28; i++) input.push_back(255);
+		model.set_X(0,255,input, 1);
+		X_history.push_back(model.get_X());*/
 #endif
 
 
