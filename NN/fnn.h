@@ -16,6 +16,15 @@ public:
 	void add_output_layer(int num);
 
 	void add_all_weights();
+
+	int get_input_size();
+	int get_output_size();
+
+	Data get_layer_output(int l, Data& input_data);
+	Data get_layer_deriv_output(int l, Data& input_data);
+	Data get_layer_linear_output(int l, Data& input_data);
+	
+	Data get_deriv_output(Data& input_data);
 };
 
 #endif

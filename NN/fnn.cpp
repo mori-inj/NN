@@ -65,3 +65,58 @@ void FNN::add_all_weights()
 		}
 	}
 }
+
+int FNN::get_input_size()
+{
+	return (int)input_layer->size();
+}
+
+int FNN::get_output_size()
+{
+	return (int)output_layer->size();
+}
+
+
+Data FNN::get_layer_output(int l, Data& input_data)
+{
+	get_output(input_data);
+	Data ret;
+	for(int i=0; i<(int)layer_list[l]->size(); i++) {
+		ret.push_back((*layer_list[l])[i]->get_output());
+	}
+	return ret;
+}
+
+Data FNN::get_layer_deriv_output(int l, Data& input_data)
+{
+	get_output(input_data);
+	Data ret;
+	for(int i=0; i<(int)layer_list[l]->size(); i++) {
+		Node* node = (*layer_list[l])[i];
+		ret.push_back(node->deriv_activation_function(node->get_linear_output()));
+	}
+	return ret;
+}
+
+Data FNN::get_layer_linear_output(int l, Data& input_data)
+{
+	get_output(input_data);
+	Data ret;
+	for(int i=0; i<(int)layer_list[l]->size(); i++) {
+		Node* node = (*layer_list[l])[i];
+		ret.push_back(node->get_linear_output());
+	}
+	return ret;
+}
+
+
+Data FNN::get_deriv_output(Data& input_data)
+{
+	Data ret = get_linear_output(input_data);
+	for(int i=0; i<(int)output_layer->size(); i++) {
+		Node* node = (*output_layer)[i];
+		ret[i] = node->deriv_activation_function(ret[i]);
+	}
+
+	return ret;
+}
