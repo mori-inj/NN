@@ -36,6 +36,18 @@
     <ClCompile Include="gdx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="discriminator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gan.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="generator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="matrix2d.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="function.h">
@@ -54,6 +66,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gdx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="discriminator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gan.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="generator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="matrix2d.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
