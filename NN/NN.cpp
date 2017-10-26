@@ -101,19 +101,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_CREATE:
 	{
+		printf("start!\n"); fflush(stdout);
 		//build model
-		int l[5] = {256, 512};//{600, 300, 150, 75, 37};
+		int l[5] = {7, 9,11};//{256, 512};//{600, 300, 150, 75, 37};
 		srand((unsigned)time(NULL));
 
-		gan.add_generator_input_layer(200);
+		gan.add_generator_input_layer(5);
 		gan.add_generator_output_layer(28*28);
-		for(int i=0; i<2; i++) {
+		for(int i=0; i<3; i++) {
 			gan.add_generator_layer(l[i], 
 				[](LD x) -> LD{return PReLU(x);},
 				[](LD x) -> LD{return deriv_PReLU(x);}
 			);
 		}
+		printf("G node done\n"); fflush(stdout);
 		gan.add_generator_all_weights();
+		printf("G initialize done\n"); fflush(stdout);
 
 		for(int i=0; i<2; i++) {
 			gan.add_discriminator_layer(l[i], 
@@ -121,10 +124,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				[](LD x) -> LD{return deriv_PReLU(x);}
 			);
 		}
+		printf("D node done\n"); fflush(stdout);
 		gan.add_discriminator_all_weights();
+		printf("D initialize done\n"); fflush(stdout);
 		
 		//model.print();
-		printf("model initialize done\n"); fflush(stdout);
+		//printf("model initialize done\n"); fflush(stdout);
+		printf("gan initialize done\n"); fflush(stdout);
+
+		const int TRAIN_DATA_SIZE = 600;
+		const int TEST_DATA_SIZE = 100;
 
 		
 		//read data
@@ -143,7 +152,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			fread(&temp, 1, 1, fp1);
 		}
 		
-		for(int i=0; i<60000; i++) {
+		for(int i=0; i<TRAIN_DATA_SIZE; i++) {
 			vector<LD> input_data;
 			vector<LD> output_data;
 			for(int j=0; j<28*28; j++) {
@@ -194,7 +203,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			fread(&temp, 1, 1, fp1);
 		}
 		
-		for(int i=0; i<10000; i++) {
+		for(int i=0; i<TEST_DATA_SIZE; i++) {
 			vector<LD> input_data;
 			vector<LD> output_data;
 			for(int j=0; j<28*28; j++) {
@@ -238,7 +247,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	case WM_TIMER:
 	{
 		//for training NN
-		printf("train: %Lf (%Lf%%), test: %Lf (%Lf%%)\n",
+		/*printf("train: %Lf (%Lf%%), test: %Lf (%Lf%%)\n",
 			model.get_error(input_data_list, output_data_list), //model.get_error_prll(input_data_list, output_data_list, 100), 
 			precision = model.get_precision(input_data_list, output_data_list)*100, //model.get_precision_prll(input_data_list, output_data_list,100)*100, 
 			model.get_error(input_test_data_list, output_test_data_list), //model.get_error_prll(input_test_data_list, output_test_data_list, 100),
@@ -261,7 +270,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			}
 		} else {
 			InvalidateRect(hWnd, NULL, FALSE);
-		}
+		}*/
+
+		gan.train(0.001, 10, 2, input_data_list);
+
+
+		//InvalidateRect(hWnd, NULL, FALSE);
 		break;
 	}
 
@@ -314,7 +328,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 	
 	case WM_DESTROY:
-		model.print_bias_and_weights();
+		gan.print_bias_and_weights();
 		PostQuitMessage(0);
 		break;
 	}

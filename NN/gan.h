@@ -1,9 +1,19 @@
+#ifndef __GAN__
+#define __GAN__
+
+/*#include <vector>
+#include <functional>
+#include "node.h"*/
 #include "generator.h"
 #include "discriminator.h"
 
-#include "model.h"
+#define LD long double
+
 typedef vector<Node*> Layer;
 typedef vector<long double> Data;
+
+//class Discriminator;
+//class Generator;
 
 class GAN
 {
@@ -12,6 +22,7 @@ private:
 	Generator G;
 	function<LD(LD)> deriv_act_D;
 	void initialize_discriminator();
+	bool D_initialized;
 public:
 	GAN();
 
@@ -33,4 +44,8 @@ public:
 	void train_discriminator(LD learning_rate, Data& input_data, Data& output_data);
 	void train_discriminator(LD learning_rate, vector<Data>& input_data, vector<Data>& output_data);
 	void train(LD learning_rate, int d_num, int g_num, vector<Data>& input_data);
+
+	void print_bias_and_weights();
 };
+
+#endif

@@ -1,7 +1,10 @@
 #include "gan.h"
+//#include "generator.h"
+//#include "discriminator.h"
 
 GAN::GAN()
 {
+	D_initialized = false;
 }
 
 void GAN::add_generator_layer(int num, function<LD(LD)> act, function<LD(LD)> deriv_act)
@@ -34,7 +37,10 @@ void GAN::initialize_discriminator()
 
 void GAN::add_discriminator_layer(int num, function<LD(LD)> act, function<LD(LD)> deriv_act)
 {
-	initialize_discriminator();
+	if(!D_initialized) {
+		initialize_discriminator();
+		D_initialized = true;
+	}
 	deriv_act_D = deriv_act;
 	D.add_layer(num, act, deriv_act);
 }
@@ -112,9 +118,14 @@ void GAN::train(LD learning_rate, int d_num, int g_num, vector<Data>& input_data
 			if(rand()%2) {
 				train_discriminator(learning_rate, input_data[cnt++], Data(1, 1));
 			} else {
-				train_discriminator(learning_rate, get_generator_output(), Data(0, 1));
+				train_discriminator(learning_rate, get_generator_output(), Data(1, 0));
 			}
 		}
 		train_generator(learning_rate, g_num);
 	}
+}
+
+
+void GAN::print_bias_and_weights()
+{
 }

@@ -154,7 +154,6 @@
     <ClCompile Include="gan.cpp" />
     <ClCompile Include="gdx.cpp" />
     <ClCompile Include="generator.cpp" />
-    <ClCompile Include="matrix2d.cpp" />
     <ClCompile Include="model.cpp" />
     <ClCompile Include="node.cpp" />
     <ClCompile Include="NN.cpp" />
@@ -168,6 +167,7 @@
     <ClInclude Include="gdx.h" />
     <ClInclude Include="generator.h" />
     <ClInclude Include="matrix2d.h" />
+    <ClInclude Include="matrix2d.hpp" />
     <ClInclude Include="model.h" />
     <ClInclude Include="node.h" />
     <ClInclude Include="weight.h" />
