@@ -79,6 +79,8 @@ int FNN::get_output_size()
 
 Data FNN::get_layer_output(int l, Data& input_data)
 {
+	if(l == (int)layer_list.size()) return get_output(input_data);
+
 	get_output(input_data);
 	Data ret;
 	for(int i=0; i<(int)layer_list[l]->size(); i++) {
@@ -89,6 +91,8 @@ Data FNN::get_layer_output(int l, Data& input_data)
 
 Data FNN::get_layer_deriv_output(int l, Data& input_data)
 {
+	if(l == (int)layer_list.size()) return get_deriv_output(input_data);
+
 	get_output(input_data);
 	Data ret;
 	for(int i=0; i<(int)layer_list[l]->size(); i++) {

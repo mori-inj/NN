@@ -14,6 +14,7 @@ const int HEIGHT = 600;
 int OUTPUT_CNT;
 
 GAN gan;
+vector<Data> X_history;
 FILE *fp0, *fp1;
 vector<Data> input_data_list, output_data_list;
 vector<Data> input_test_data_list, output_test_data_list;
@@ -103,12 +104,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	{
 		printf("start!\n"); fflush(stdout);
 		//build model
-		int l[5] = {7, 9,11};//{256, 512};//{600, 300, 150, 75, 37};
+		int l[5] = {256, 256};//{256, 512};//{600, 300, 150, 75, 37};
 		srand((unsigned)time(NULL));
 
-		gan.add_generator_input_layer(5);
+		gan.add_generator_input_layer(100);
 		gan.add_generator_output_layer(28*28);
-		for(int i=0; i<3; i++) {
+		for(int i=0; i<2; i++) {
 			gan.add_generator_layer(l[i], 
 				[](LD x) -> LD{return PReLU(x);},
 				[](LD x) -> LD{return deriv_PReLU(x);}
@@ -132,7 +133,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		//printf("model initialize done\n"); fflush(stdout);
 		printf("gan initialize done\n"); fflush(stdout);
 
-		const int TRAIN_DATA_SIZE = 600;
+		const int TRAIN_DATA_SIZE = 60000;
 		const int TEST_DATA_SIZE = 100;
 
 		
@@ -159,7 +160,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				unsigned char data;
 				fseek(fp0, 16+i*28*28+j, SEEK_SET);
 				fread(&data, 1, 1, fp0);
-				input_data.push_back((long double)data);
+				input_data.push_back((long double)data/255);
 			}
 			
 			output_data.push_back(1);
@@ -210,7 +211,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				unsigned char data;
 				fseek(fp0, 16 + i*28*28 + j, SEEK_SET);
 				fread(&data, 1, 1, fp0);
-				input_data.push_back((long double)data);
+				input_data.push_back((long double)data/255);
 			}
 			
 			output_data.push_back(1);
@@ -272,8 +273,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			InvalidateRect(hWnd, NULL, FALSE);
 		}*/
 
-		gan.train(0.001, 10, 2, input_data_list);
-
+		gan.train(1, 10, 2, input_data_list);
+		X_history.push_back(gan.get_generator_output());
+		X_history.push_back(gan.get_generator_output());
+		X_history.push_back(gan.get_generator_output());
+		X_history.push_back(gan.get_generator_output());
+		X_history.push_back(gan.get_generator_output());
 
 		//InvalidateRect(hWnd, NULL, FALSE);
 		break;
@@ -296,7 +301,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		SetBkColor(MemDC, RGB(255, 255, 255));
 
 		//draw X
-		/*int x_coord = 50, y_coord = 50;
+		int x_coord = 50, y_coord = 50;
 		for(int idx = 0; idx < (int)X_history.size(); idx+=1) {
 			for(int i=0; i<28; i++) {
 				for(int j=0; j<28; j++) {
@@ -309,12 +314,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 					DeleteObject(hPen);
 				}
 			}
-			x_coord += 28;
+			x_coord += 29;
 			if(x_coord > 750) {
 				x_coord = 50;
-				y_coord += 28;
+				y_coord += 29;
 			}
-		}*/
+		}
+		printf("%d data drawn\n",(int)X_history.size()); fflush(stdout);
 
 		BitBlt(hdc, 0, 0, crt.right, crt.bottom, MemDC, 0, 0, SRCCOPY);
 		SelectObject(MemDC, OldBit);

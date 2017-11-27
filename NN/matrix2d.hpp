@@ -54,10 +54,24 @@ Matrix2D<T>::Matrix2D(const Matrix2D<T>& mat)
 	}
 }
 
+template <typename T>
+void Matrix2D<T>::transpose(Matrix2D<T> mat)
+{
+	row = mat.col;
+	col = mat.row;
+
+	data = vector<vector<T> >(row);
+
+	for(int i=0; i<row; i++) {
+		for(int j=0; j<col; j++) {
+			data[i].push_back(mat[j][i]);
+		}
+	}
+}
+
 Matrix2D<LD> mat_mul(Matrix2D<LD> A, Matrix2D<LD> B)
 {
 	assert(A.col == B.row);
-	printf("\t\t\tassert passed\n"); fflush(stdout);
 	int I = A.row;
 	int J = B.row;
 	int K = B.col;

@@ -21,6 +21,8 @@ public:
 	Matrix2D(vector<vector<T> > mat);
 	Matrix2D(const Matrix2D<T>& mat);
 
+	void transpose(Matrix2D<T> mat);
+
 	vector<T>& operator[] (const int idx) { return data[idx]; }
 	const vector<T>& operator[] (const int idx) const { return data[idx]; }
 };

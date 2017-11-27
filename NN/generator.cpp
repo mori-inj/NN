@@ -31,120 +31,170 @@ void Generator::dump_weights()
 	}
 }
 
-void Generator::train(long double learning_rate, Data& random_data, vector<Data>& grad_D, LD output_D)
+void Generator::train(long double learning_rate, Data& random_data, vector<Data>& grad_D, Data output_D)
 {
-	vector<Matrix2D<LD> > g_prime;
-	vector<Matrix2D<LD> > theta;
-	vector<Matrix2D<LD> > g_prime_theta;
-	vector<Matrix2D<LD> > accumulative_g_prime_theta;
-	vector<Matrix2D<LD> > grad;
-	const int LAYER_SIZE = (int)layer_list.size();
+	bool DEBUG_MODE = true;//false;
+	const int N = (int)layer_list.size()+2;
+	vector<Matrix2D<LD> > g_prime(N);
+	vector<Matrix2D<LD> > theta(N);
+	vector<Matrix2D<LD> > g_prime_theta(N);
+	vector<Matrix2D<LD> > accumulative_g_prime_theta(N);
+	vector<Matrix2D<LD> > a_prime(N);
+	vector<vector<Matrix2D<LD> > > grad_G(N);
+	vector<vector<Matrix2D<LD> > > grad(N);
+	clock_t t,s;
 
-	printf("G train start\n"); fflush(stdout);
-
-	g_prime.push_back(get_deriv_output(random_data));
-	for(int l=LAYER_SIZE-1; l>=0; l--) {
-		g_prime.push_back(get_layer_deriv_output(l, random_data));
+	t=clock();
+	for(int n=1; n<=N-1; n++) {
+		g_prime[n] = get_layer_deriv_output(n-1, random_data);
 	}
-	printf("\tg' (%d) done\n", (int)g_prime.size()); fflush(stdout);
-	for(int i=0; i<(int)g_prime.size(); i++) {
-		printf("\t\t%3d: %d %d\n", i, g_prime[i].row, g_prime[i].col); fflush(stdout);
-		for(int j=0; j<g_prime[i].row; j++) {
-			printf("\t\t");
-			for(int k=0; k<g_prime[i].col; k++) {
-				printf("%.2Lf ", g_prime[i][j][k]);
-			}
-			printf("\n"); fflush(stdout);
-		}
+	if(DEBUG_MODE) {
+		printf("g' done (%d)\n",clock()-t); fflush(stdout);
 	}
 
-	for(int l=(int)weights.size()-1; l>=0; l--) {
-		theta.push_back(Matrix2D<LD>(weights[l]->row, weights[l]->col));
-		for(int i=0; i<weights[l]->row; i++) {
-			for(int j=0; j<weights[l]->col; j++) {
-				theta[(int)weights.size()-1 - l][i][j] = (*weights[l])[i][j]->get_w();
+	t=clock();
+	for(int n=1; n<=N-1; n++) {
+		theta[n] = Matrix2D<LD>(weights[n-1]->row, weights[n-1]->col);
+		for(int i=0; i<weights[n-1]->row; i++) {
+			for(int j=0; j<weights[n-1]->col; j++) {
+				theta[n][i][j] = (*weights[n-1])[i][j]->get_w();
 			}
 		}
 	}
-	printf("\ttheta (%d) done\n", (int)theta.size()); fflush(stdout);
-	for(int i=0; i<(int)theta.size(); i++) {
-		printf("\t\t%3d: %d %d\n", i, theta[i].row, theta[i].col); fflush(stdout);
-		for(int j=0; j<theta[i].row; j++) {
-			printf("\t\t");
-			for(int k=0; k<theta[i].col; k++) {
-				printf("%.2Lf ", theta[i][j][k]);
-			}
-			printf("\n"); fflush(stdout);
+	if(DEBUG_MODE) {
+		printf("theta done (%d)\n",clock()-t); fflush(stdout);
+	}
+
+	t=clock();
+	for(int n=1; n<=N-1; n++) {
+		g_prime_theta[n] = mul(g_prime[n], theta[n]);
+	}
+	if(DEBUG_MODE) {
+		printf("g' * theta done (%d)\n",clock()-t); fflush(stdout);
+	}
+
+	t=clock();
+	accumulative_g_prime_theta[N-1] = g_prime_theta[N-1];
+	for(int n=N-2; n>=2; n--) {
+		accumulative_g_prime_theta[n] = mat_mul(g_prime_theta[n], accumulative_g_prime_theta[n+1]);
+	}
+	if(DEBUG_MODE) {
+		printf("accm g' * theta done (%d)\n",clock()-t); fflush(stdout);
+	}
+
+	t=clock();
+	for(int n=1; n<=N-1; n++) {
+		Matrix2D<LD> g_prime_a;
+		Matrix2D<LD> ret;
+		if(n==1) {
+			ret = Matrix2D<LD>(random_data);
+		} else {
+			ret = Matrix2D<LD>(get_layer_output(n-2,random_data));
 		}
+		ret.transpose(ret);
+		g_prime_a = mat_mul(g_prime[n], ret);
+		g_prime_a.transpose(g_prime_a);
+		a_prime[n] = g_prime_a;
+	}
+	if(DEBUG_MODE) {
+		printf("a' done (%d)\n",clock()-t); fflush(stdout);
 	}
 
-
-	for(int l=0; l<=LAYER_SIZE; l++) {
-		g_prime_theta.push_back(mul(g_prime[l], theta[l]));
-	}
-	printf("\tg' * theta (%d) done\n", (int)g_prime_theta.size()); fflush(stdout);
-	for(int i=0; i<(int)g_prime_theta.size(); i++) {
-		printf("\t\t%3d: %d %d\n", i, g_prime_theta[i].row, g_prime_theta[i].col); fflush(stdout);
-		for(int j=0; j<g_prime_theta[i].row; j++) {
-			printf("\t\t");
-			for(int k=0; k<g_prime_theta[i].col; k++) {
-				printf("%.2Lf ", g_prime_theta[i][j][k]);
+	t=clock();
+	for(int n=1; n<=N-1; n++) {
+		const int s_n = get_output_size();
+		grad_G[n] = vector<Matrix2D<LD> >(s_n);
+		if(n==N-1) {
+			for(int i=0; i<s_n; i++) {
+				grad_G[n][i] = Matrix2D<LD> (a_prime[n].row,a_prime[n].col);
+				for(int j=0; j<a_prime[n].row; j++) {
+					for(int k=0; k<a_prime[n].col; k++) {
+						if(k==i)
+							grad_G[n][i][j][k] = a_prime[n][j][k];
+						else
+							grad_G[n][i][j][k] = 0;
+					}
+				}
 			}
-			printf("\n"); fflush(stdout);
-		}
-	}
-	
-
-	accumulative_g_prime_theta.push_back(g_prime_theta[0]);
-	for(int l=0; l<LAYER_SIZE; l++) {
-		accumulative_g_prime_theta.push_back(mat_mul(g_prime_theta[l+1], accumulative_g_prime_theta[l]));
-	}
-	printf("\taccm g' * theta (%d) done\n", (int)accumulative_g_prime_theta.size()); fflush(stdout);
-	for(int i=0; i<(int)accumulative_g_prime_theta.size(); i++) {
-		printf("\t\t%3d: %d %d\n", i, accumulative_g_prime_theta[i].row, accumulative_g_prime_theta[i].col); fflush(stdout);
-		for(int j=0; j<accumulative_g_prime_theta[i].row; j++) {
-			printf("\t\t");
-			for(int k=0; k<accumulative_g_prime_theta[i].col; k++) {
-				printf("%.2Lf ", accumulative_g_prime_theta[i][j][k]);
-			}
-			printf("\n"); fflush(stdout);
-		}
-	}
-
-
-
-	for(int l=0; l<=LAYER_SIZE; l++) {
-		printf("layer %d (%d x %d): \n", l, 
-			accumulative_g_prime_theta[l].row, accumulative_g_prime_theta[l].col); fflush(stdout);
-		for(int i=0; i<accumulative_g_prime_theta[l].row; i++) {
-			for(int j=0; j<accumulative_g_prime_theta[l].col; j++) {
-				printf("%.2Lf ", accumulative_g_prime_theta[l][i][j]); fflush(stdout);
-			}
-			printf("\n"); fflush(stdout);
-		}
-		printf("\n\n");
-	}
-	printf("G train end\n"); fflush(stdout);
-	/*
-
-	//여기 아래부터 새로 구하기
-	Data deriv_g = get_deriv_output(random_data);
-	Data out = get_output(random_data);
-	//grad.push_back(Matrix2D<LD>((int)deriv_g.size(), (int)deriv_g.size()*(int)out.size()));
-	for(int i=0; i<grad[0].row; i++) {
-		for(int j1=0; j1<grad[0].col; j1++) {
-			for(int j2=0; j2<grad[0].row; j2++) {
-
+		} else {
+			accumulative_g_prime_theta[n+1].transpose(accumulative_g_prime_theta[n+1]);
+			for(int i=0; i<s_n; i++) {
+				grad_G[n][i] = Matrix2D<LD> (a_prime[n].row,a_prime[n].col);
+				grad_G[n][i] = mul(accumulative_g_prime_theta[n+1][i], a_prime[n]);
 			}
 		}
 	}
-
-
-	for(int l=LAYER_SIZE-1; l>=0; l--) {
-		//모든 레이어에 대해 grad구하기
+	if(DEBUG_MODE) {
+		printf("grad_G done (%d)\n",clock()-t); fflush(stdout);
 	}
 
-	//맞나 검증하고 log씌워서 생긴거 넣고 실제 update 하는것도 넣고
+	// grad_D 랑 곱하기
+	t=clock();
+	Matrix2D<LD> D_prime((int)grad_D.size(), (int)grad_D[0].size());
+	for(int i=0; i<D_prime.row; i++) {
+		D_prime[i] = grad_D[i];
+	}
+	for(int n=1; n<=N-1; n++) {
+		grad[n] = vector<Matrix2D<LD> >(D_prime.row);
+		Matrix2D<LD> serialized((int)grad_G[n].size(), 0);
+		for(int i=0; i<(int)grad_G[n].size(); i++) {
+			for(int j=0; j<grad_G[n][0].row; j++) {
+				serialized[i].insert(serialized[i].end(), grad_G[n][i][j].begin(), grad_G[n][i][j].end());
+				/*for(int k=0; k<grad_G[n][0].col; k++) {
+					serialized[i].push_back(grad_G[n][i][j][k]);
+				}*/
+			}
+		}
+		serialized.col = grad_G[n][0].row * grad_G[n][0].col;
 
-	*/
+		Matrix2D<LD> ret = mat_mul(D_prime, serialized);
+		for(int i=0; i<D_prime.row; i++) {
+			Matrix2D<LD> deserialized(grad_G[n][0].row,grad_G[n][0].col);
+			for(int j=0; j<deserialized.row; j++) {
+				deserialized[j] = vector<LD>(ret[i].begin()+j*deserialized.col,ret[i].begin()+(j+1)*deserialized.col);
+				/*for(int k=0; k<deserialized.col; k++) {
+					deserialized[j][k] = ret[i][j*deserialized.col + k];
+				}*/
+			}
+			grad[n][i] = deserialized;
+		}
+	}
+	if(DEBUG_MODE) {
+		printf("grad done (%d)\n",clock()-t); fflush(stdout);
+	}
+
+	// 로그 미분 f'/f
+	t=clock();
+	for(int n=1; n<=N-1; n++) {
+		for(int i=0; i<(int)grad[n].size(); i++) {
+			const LD ret = max(1e-12, output_D[i]);
+			for(int j=0; j<grad[n][i].row; j++) {
+				for(int k=0; k<grad[n][i].col; k++) {
+					grad[n][i][j][k] /=  ret;
+				}
+			}
+		}
+	}
+	if(DEBUG_MODE) {
+		printf("log done (%d)\n",clock()-t); fflush(stdout);
+	}
+
+	//theta update
+	t=clock();
+	for(int n=1; n<=N-1; n++) {
+		for(int k=0; k<(int)grad[n].size(); k++) {
+			for(int i=0; i<weights[n-1]->row; i++) {
+				for(int j=0; j<weights[n-1]->col; j++) {
+					LD w = (*weights[n-1])[i][j]->get_w();
+					w = w + learning_rate * grad[n][k][i][j];
+					(*weights[n-1])[i][j]->set_w(w);
+				}
+			}
+		}
+	}
+	if(DEBUG_MODE) {
+		printf("theta update done (%d)\n",clock()-t); fflush(stdout);
+	}
+
+	//bias update
 }

@@ -55,14 +55,20 @@ Data GAN::get_generator_output()
 {
 	Data random_data;
 	for(int i=0; i<(int)G.get_input_size(); i++) {
-		random_data.push_back(rand()%256);
+		random_data.push_back((rand()%256)/255.0);
 	}
-	return G.get_output(random_data);
+	Data ret = G.get_output(random_data);
+	for(int i=0; i<(int)ret.size(); i++)
+		ret[i] *= 255;
+	return ret;
 }
 
 Data GAN::get_generator_output(Data& input_data)
 {
-	return G.get_output(input_data);
+	Data ret = G.get_output(input_data);
+	for(int i=0; i<(int)ret.size(); i++)
+		ret[i] *= 255;
+	return ret;
 }
 
 pair<LD, Data> GAN::get_discriminator_output_from_random(Data& random_data)
@@ -83,13 +89,13 @@ void GAN::train_generator(LD learning_rate)
 {
 	Data random_data;
 	for(int i=0; i<(int)G.get_input_size(); i++) {
-		random_data.push_back(rand()%256);
+		random_data.push_back((rand()%256)/255.0);
 	}
 	G.train(
 		learning_rate, 
 		random_data, 
 		D.calc_grad_X(random_data, deriv_act_D), 
-		D.get_output(G.get_output(random_data))[0]
+		D.get_output(G.get_output(random_data))
 	); 
 }
 
@@ -113,10 +119,11 @@ void GAN::train_discriminator(LD learning_rate, vector<Data>& input_data, vector
 void GAN::train(LD learning_rate, int d_num, int g_num, vector<Data>& input_data)
 {
 	const int INPUT_SIZE = (int)input_data.size();
-	for(int cnt=0; cnt<INPUT_SIZE;) {
+	for(int cnt=rand()%1000; cnt<INPUT_SIZE;) {
+		//printf("training %d / %d\n",cnt,INPUT_SIZE); fflush(stdout);
 		for(int i=0; i<d_num && cnt<INPUT_SIZE; i++) {
 			if(rand()%2) {
-				train_discriminator(learning_rate, input_data[cnt++], Data(1, 1));
+				train_discriminator(learning_rate, input_data[cnt+=1000], Data(1, 1));
 			} else {
 				train_discriminator(learning_rate, get_generator_output(), Data(1, 0));
 			}

@@ -21,15 +21,20 @@ long double step(long double x)
 long double sigmoid(long double x)
 {
 	//return 1/(1+powl(e,-x));
-	return 1/(1+powl(e,-10*x));
+	//return 1/(1+powl(e,-10*x));
+	return 1/(1+powl(e,-x));
 }
 
 long double deriv_sigmoid(long double x)
 {
 	/*long double s = sigmoid(x);
 	return s*(1-s);*/
-	long double s = sigmoid(10,x);
-	return 10*s*(1-s);
+	
+	//long double s = sigmoid(10,x);
+	//return 10*s*(1-s);
+
+	long double s = sigmoid(1,x);
+	return s*(1-s);
 }
 
 long double sigmoid(long double b, long double x)
